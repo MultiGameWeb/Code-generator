@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get Your Code Now — AI Code Generator PWA (Step 1 Foundation)</title>
+    <title>Get Your Code Now — AI Code Generator PWA (Step 2 PWA Foundation)</title>
     
-    <!-- PWA Manifest Link Placeholder for Step 2 Backend / Asset Phase -->
-    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="./manifest.json" crossorigin="use-credentials">
     <meta name="theme-color" content="#030712">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -85,7 +85,6 @@
             pointer-events: none;
             z-index: 1;
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -107,7 +106,6 @@
     <!-- Sticky Navigation -->
     <header class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-border/50 transition-all duration-300" id="navbar">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <!-- Logo -->
             <a href="#" class="flex items-center gap-3 group">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center glow-effect group-hover:scale-105 transition-transform">
                     <i class="fa-solid fa-code text-white text-lg"></i>
@@ -120,7 +118,6 @@
                 </div>
             </a>
 
-            <!-- Desktop Menu -->
             <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
                 <a href="#hero" class="hover:text-blue-400 transition-colors">Home</a>
                 <a href="#generator" class="hover:text-blue-400 transition-colors">Generator</a>
@@ -129,7 +126,6 @@
                 <a href="#pwa-section" class="hover:text-blue-400 transition-colors">PWA App</a>
             </nav>
 
-            <!-- Right Action -->
             <div class="hidden md:flex items-center gap-4">
                 <button id="install-btn-nav" class="hidden items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold hover:bg-blue-500/20 transition-all">
                     <i class="fa-solid fa-download"></i> Install App
@@ -139,13 +135,11 @@
                 </a>
             </div>
 
-            <!-- Mobile Hamburger Toggle -->
             <button id="mobile-menu-btn" class="md:hidden text-gray-300 hover:text-white p-2 focus:outline-none" aria-label="Toggle navigation menu">
                 <i class="fa-solid fa-bars text-xl"></i>
             </button>
         </div>
 
-        <!-- Mobile Menu Drawer -->
         <div id="mobile-menu" class="hidden md:hidden glass-panel border-b border-border px-4 pt-2 pb-6 space-y-3">
             <a href="#hero" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Home</a>
             <a href="#generator" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Generator</a>
@@ -165,19 +159,13 @@
 
     <!-- Hero Section with 3D Background -->
     <section id="hero" class="relative min-h-screen flex items-center justify-center pt-28 pb-20 overflow-hidden">
-        <!-- 3D WebGL Canvas Background Container -->
         <div id="canvas-container"></div>
-
-        <!-- Gradient Ambient Lighting Overlays -->
         <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[140px] rounded-full pointer-events-none"></div>
         <div class="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left w-full">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                
-                <!-- Hero Left Content -->
                 <div class="lg:col-span-7 space-y-8">
-                    <!-- Badge -->
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold tracking-wide uppercase">
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                         AI CODE GENERATOR • PWA FOUNDATION
@@ -195,7 +183,6 @@
                         Describe what you want to build and turn your idea into clean, usable code.
                     </p>
 
-                    <!-- CTAs -->
                     <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                         <a href="#generator" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-base shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> Start Coding
@@ -205,7 +192,6 @@
                         </a>
                     </div>
 
-                    <!-- Quick Metrics / Trust Indicators -->
                     <div class="pt-6 border-t border-border/50 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0 text-center lg:text-left">
                         <div>
                             <div class="text-2xl font-bold text-white">11+</div>
@@ -222,7 +208,6 @@
                     </div>
                 </div>
 
-                <!-- Hero Right Graphic Preview Element (Floating Glass Card) -->
                 <div class="lg:col-span-5 hidden lg:block">
                     <div class="relative mx-auto w-full max-w-md">
                         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-30 blur-xl"></div>
@@ -236,21 +221,19 @@
                                 <span class="text-xs font-mono text-gray-400">ai_generator.py</span>
                             </div>
                             <pre class="font-mono text-xs text-blue-300 overflow-x-auto p-2 bg-darker/60 rounded-xl border border-border/50 leading-relaxed"><code><span class="text-purple-400">def</span> <span class="text-blue-400">generate_code</span>(prompt):
-    <span class="text-gray-500"># Step 1 Frontend prototype mode</span>
+    <span class="text-gray-500"># Step 2 PWA Foundation mode</span>
     ai_engine = <span class="text-yellow-300">GetYourCodeNow</span>()
     <span class="text-purple-400">return</span> ai_engine.mock_output(prompt)
 
-<span class="text-gray-500"># Ready for Step 2 Node.js + Gemini API backend</span>
 output = generate_code(<span class="text-green-300">"Build awesome app"</span>)
 print(output)</code></pre>
                             <div class="flex items-center justify-between pt-2 text-xs text-gray-400 font-mono">
-                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> Step 1 UI Prototype</span>
+                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> PWA Foundation</span>
                                 <span>Python 3.11</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
@@ -263,9 +246,7 @@ print(output)</code></pre>
                 <p class="text-gray-400 max-w-xl mx-auto">Test out the frontend UI preview mock engine. Select your language and submit your prompt.</p>
             </div>
 
-            <!-- Generator Box -->
             <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
-                <!-- Requirement Input -->
                 <div class="space-y-2">
                     <label for="prompt-input" class="block text-sm font-semibold text-gray-300">What do you want to build?</label>
                     <div class="relative">
@@ -273,7 +254,6 @@ print(output)</code></pre>
                     </div>
                 </div>
 
-                <!-- Language Selector & Button Grid -->
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="w-full sm:w-auto flex-1">
                         <label for="language-select" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Target Language</label>
@@ -304,16 +284,13 @@ print(output)</code></pre>
                     </div>
                 </div>
 
-                <!-- Loading State (Hidden by default) -->
                 <div id="loading-state" class="hidden py-12 text-center space-y-4">
                     <div class="inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     <div class="text-sm font-medium text-gray-300 animate-pulse">Simulating code synthesis preview...</div>
                 </div>
 
-                <!-- Code Result Card (Hidden until generated) -->
                 <div id="code-result-container" class="hidden pt-4 space-y-4 animate-fadeIn">
                     <div class="glass-panel rounded-2xl border border-border overflow-hidden">
-                        <!-- Code Output Header Bar -->
                         <div class="bg-darker/90 px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <span id="result-lang-badge" class="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs font-semibold">Python</span>
@@ -331,7 +308,6 @@ print(output)</code></pre>
                                 </button>
                             </div>
                         </div>
-                        <!-- Code Content Box -->
                         <div class="p-4 bg-darker/60 overflow-x-auto max-h-[400px]">
                             <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed" id="code-output-text"><code>def add(a, b):
     return a + b
@@ -349,17 +325,15 @@ def divide(a, b):
 
 if __name__ == "__main__":
     print("=== Python Calculator ===")
-    print("1. Add\n2. Subtract\n3. Multiply\n4. Divide")
-    # Step 1 Frontend Mock Code Output</code></pre>
+    print("1. Add\n2. Subtract\n3. Multiply\n4. Divide")</code></pre>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <!-- Developer Experience Section (Split Layout) -->
+    <!-- Developer Experience Section -->
     <section class="py-24 relative border-t border-border/50 bg-dark">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center space-y-4 mb-16">
@@ -368,7 +342,6 @@ if __name__ == "__main__":
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <!-- Left: Prompt Text -->
                 <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border space-y-4">
                     <div class="flex items-center gap-2 text-blue-400 font-mono text-xs uppercase tracking-wider font-semibold">
                         <i class="fa-solid fa-terminal"></i> Step 1: Natural User Input
@@ -377,11 +350,10 @@ if __name__ == "__main__":
                         “Create a secure user authentication middleware node service with JWT verification and role-based permissions.”
                     </div>
                     <p class="text-xs text-gray-500 font-light">
-                        Express requirements plain and simple. No rigid syntax required—our upcoming Gemini AI layer will handle natural language processing effortlessly.
+                        Express requirements plain and simple. No rigid syntax required.
                     </p>
                 </div>
 
-                <!-- Right: Generated Output Preview -->
                 <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border space-y-4">
                     <div class="flex items-center gap-2 text-emerald-400 font-mono text-xs uppercase tracking-wider font-semibold">
                         <i class="fa-solid fa-code"></i> Step 2: Clean Code Delivery
@@ -419,9 +391,7 @@ function verifyToken(req, res, next) {
                 <p class="text-gray-400 max-w-xl mx-auto">Built from the ground up for modern developers, students, and software engineers.</p>
             </div>
 
-            <!-- 4 Modern Cards Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Card 1 -->
                 <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
                     <div class="space-y-4">
                         <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-lg group-hover:scale-110 transition-transform">
@@ -437,7 +407,6 @@ function verifyToken(req, res, next) {
                     </div>
                 </div>
 
-                <!-- Card 2 -->
                 <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
                     <div class="space-y-4">
                         <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-lg group-hover:scale-110 transition-transform">
@@ -453,7 +422,6 @@ function verifyToken(req, res, next) {
                     </div>
                 </div>
 
-                <!-- Card 3 -->
                 <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
                     <div class="space-y-4">
                         <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-lg group-hover:scale-110 transition-transform">
@@ -469,7 +437,6 @@ function verifyToken(req, res, next) {
                     </div>
                 </div>
 
-                <!-- Card 4 -->
                 <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
                     <div class="space-y-4">
                         <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg group-hover:scale-110 transition-transform">
@@ -497,7 +464,6 @@ function verifyToken(req, res, next) {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-                <!-- Step 1 -->
                 <div class="glass-panel rounded-3xl p-8 border border-border relative space-y-4 text-center md:text-left">
                     <div class="text-4xl font-black text-blue-500/30 font-mono">01 — Describe</div>
                     <h3 class="text-xl font-bold text-white">Tell the AI what you want to build.</h3>
@@ -506,7 +472,6 @@ function verifyToken(req, res, next) {
                     </p>
                 </div>
 
-                <!-- Step 2 -->
                 <div class="glass-panel rounded-3xl p-8 border border-border relative space-y-4 text-center md:text-left">
                     <div class="text-4xl font-black text-indigo-500/30 font-mono">02 — Generate</div>
                     <h3 class="text-xl font-bold text-white">Get code generated for your requirement.</h3>
@@ -515,7 +480,6 @@ function verifyToken(req, res, next) {
                     </p>
                 </div>
 
-                <!-- Step 3 -->
                 <div class="glass-panel rounded-3xl p-8 border border-border relative space-y-4 text-center md:text-left">
                     <div class="text-4xl font-black text-purple-500/30 font-mono">03 — Build</div>
                     <h3 class="text-xl font-bold text-white">Copy, edit and use the generated code.</h3>
@@ -536,7 +500,6 @@ function verifyToken(req, res, next) {
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                <!-- Language Badges -->
                 <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
                     <i class="fa-brands fa-python text-2xl text-blue-400"></i>
                     <span class="text-sm font-semibold text-gray-200">Python</span>
@@ -595,12 +558,12 @@ function verifyToken(req, res, next) {
                     </div>
                     <h2 class="text-3xl sm:text-5xl font-bold text-white tracking-tight">Your Coding Tool. Anywhere.</h2>
                     <p class="text-gray-400 text-base sm:text-lg leading-relaxed">
-                        Designed to be installed directly onto your phone, tablet, or desktop. Prepared for offline caching structures in the next PWA phase.
+                        Designed to be installed directly onto your phone, tablet, or desktop. Featuring offline-ready application shell caching.
                     </p>
 
                     <div class="space-y-3 pt-2">
                         <div class="flex items-center gap-3 text-gray-300 text-sm">
-                            <i class="fa-solid fa-check text-emerald-400"></i> Prepared for offline caching in the next PWA phase
+                            <i class="fa-solid fa-check text-emerald-400"></i> Offline-ready application shell caching structure
                         </div>
                         <div class="flex items-center gap-3 text-gray-300 text-sm">
                             <i class="fa-solid fa-check text-emerald-400"></i> Lightning-fast loading performance structure
@@ -617,7 +580,6 @@ function verifyToken(req, res, next) {
                     </div>
                 </div>
 
-                <!-- Right visual mockup representation -->
                 <div class="lg:col-span-6 flex justify-center">
                     <div class="relative w-full max-w-md">
                         <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-emerald-600 to-blue-600 opacity-30 blur-xl"></div>
@@ -627,12 +589,13 @@ function verifyToken(req, res, next) {
                             </div>
                             <div class="space-y-2">
                                 <h3 class="text-xl font-bold text-white">Get Your Code Now</h3>
-                                <p class="text-xs text-gray-400 font-mono">PWA Step 1 Architecture</p>
+                                <p class="text-xs text-gray-400 font-mono">PWA Step 2 Architecture</p>
                             </div>
                             <div class="p-4 rounded-2xl bg-darker border border-border text-left space-y-2 text-xs text-gray-300 font-mono">
-                                <div class="flex justify-between"><span>PWA Foundation:</span> <span class="text-emerald-400">Ready</span></div>
-                                <div class="flex justify-between"><span>Service Worker:</span> <span class="text-blue-400">Step 2</span></div>
-                                <div class="flex justify-between"><span>Install Support:</span> <span class="text-purple-400">Browser Dependent</span></div>
+                                <div class="flex justify-between"><span>PWA Status:</span> <span id="pwa-status-text" class="text-yellow-400">Checking...</span></div>
+                                <div class="flex justify-between"><span>Service Worker:</span> <span id="sw-status-text" class="text-blue-400">Checking...</span></div>
+                                <div class="flex justify-between"><span>Install Support:</span> <span id="install-support-text" class="text-purple-400">Detecting...</span></div>
+                                <div class="flex justify-between"><span>App Shell:</span> <span class="text-emerald-400">Cached</span></div>
                             </div>
                         </div>
                     </div>
@@ -663,14 +626,78 @@ function verifyToken(req, res, next) {
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-border/50 text-center text-xs text-gray-500 font-mono">
-            © 2026 Get Your Code Now. Step 1 UI & PWA Prototype Foundation. Backend & Gemini API ready.
+            Step 2 — PWA Foundation. Backend and Gemini API integration will be added later.
         </div>
     </footer>
 
-    <!-- JavaScript Application Logic & PWA Installation Setup -->
+    <!-- Application Logic & Lifecycle-Aware PWA Management -->
     <script>
         // ==========================================
-        // 1. PWA INSTALLATION PROMPT MANAGEMENT
+        // 1. LIFECYCLE-AWARE SERVICE WORKER STATUS
+        // ==========================================
+        const pwaStatusText = document.getElementById('pwa-status-text');
+        const swStatusText = document.getElementById('sw-status-text');
+        const installSupportText = document.getElementById('install-support-text');
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                if(swStatusText) swStatusText.textContent = 'Registering...';
+                
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        
+                        // Check active worker state accurately
+                        const worker = registration.installing || registration.waiting || registration.active;
+                        if (worker) {
+                            updateWorkerState(worker);
+                            worker.addEventListener('statechange', (e) => {
+                                updateWorkerState(e.target);
+                            });
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('ServiceWorker registration failed: ', error);
+                        if(swStatusText) {
+                            swStatusText.textContent = 'Unavailable';
+                            swStatusText.className = 'text-red-400';
+                        }
+                        if(pwaStatusText) {
+                            pwaStatusText.textContent = 'Unavailable';
+                            pwaStatusText.className = 'text-red-400';
+                        }
+                    });
+            });
+
+            function updateWorkerState(worker) {
+                if (worker.state === 'activated' || navigator.serviceWorker.controller) {
+                    if(swStatusText) {
+                        swStatusText.textContent = 'Active';
+                        swStatusText.className = 'text-emerald-400';
+                    }
+                    if(pwaStatusText) {
+                        pwaStatusText.textContent = 'Ready';
+                        pwaStatusText.className = 'text-emerald-400';
+                    }
+                } else if (worker.state === 'installing') {
+                    if(swStatusText) {
+                        swStatusText.textContent = 'Installing...';
+                        swStatusText.className = 'text-yellow-400';
+                    }
+                } else if (worker.state === 'waiting') {
+                    if(swStatusText) {
+                        swStatusText.textContent = 'Installed';
+                        swStatusText.className = 'text-blue-400';
+                    }
+                }
+            }
+        } else {
+            if(swStatusText) swStatusText.textContent = 'Unavailable';
+            if(pwaStatusText) pwaStatusText.textContent = 'Unavailable';
+        }
+
+        // ==========================================
+        // 2. REAL BROWSER INSTALL SUPPORT DETECTION
         // ==========================================
         let deferredPrompt;
         const installButtons = [
@@ -679,9 +706,20 @@ function verifyToken(req, res, next) {
             document.getElementById('pwa-install-main-btn')
         ];
 
+        // Default initial browser-dependent state before event fires
+        if(installSupportText) {
+            installSupportText.textContent = 'Browser Dependent';
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            
+            if(installSupportText) {
+                installSupportText.textContent = 'Available';
+                installSupportText.className = 'text-emerald-400';
+            }
+
             installButtons.forEach(btn => {
                 if(btn) {
                     btn.classList.remove('hidden');
@@ -701,14 +739,32 @@ function verifyToken(req, res, next) {
                         }
                         deferredPrompt = null;
                     } else {
-                        alert('PWA installation is ready! If the install button is hidden, use your browser menu options to "Install App" or "Add to Home Screen".');
+                        alert('PWA installation options can be accessed via your browser menu ("Install App" or "Add to Home Screen").');
                     }
                 });
             }
         });
 
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was successfully installed');
+            if(installSupportText) {
+                installSupportText.textContent = 'Installed';
+                installSupportText.className = 'text-emerald-400';
+            }
+            if(pwaStatusText) {
+                pwaStatusText.textContent = 'Installed';
+                pwaStatusText.className = 'text-emerald-400';
+            }
+            installButtons.forEach(btn => {
+                if(btn) {
+                    btn.classList.remove('flex');
+                    btn.classList.add('hidden');
+                }
+            });
+        });
+
         // ==========================================
-        // 2. THREE.JS 3D HERO BACKGROUND ANIMATION
+        // 3. THREE.JS 3D HERO BACKGROUND ANIMATION
         // ==========================================
         function initThreeHero() {
             const container = document.getElementById('canvas-container');
@@ -720,15 +776,12 @@ function verifyToken(req, res, next) {
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Safeguard mobile performance by limiting pixel ratio
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             container.appendChild(renderer.domElement);
 
-            // Create a floating group of glowing 3D symbols / shapes representing code blocks
             const group = new THREE.Group();
             scene.add(group);
 
-            // Torus Knot / Code Core geometry
             const geometry = new THREE.TorusKnotGeometry(1.4, 0.4, 64, 16);
             const material = new THREE.MeshStandardMaterial({
                 color: 0x3b82f6,
@@ -739,7 +792,6 @@ function verifyToken(req, res, next) {
             const codeCore = new THREE.Mesh(geometry, material);
             group.add(codeCore);
 
-            // Ambient & Point Lighting
             const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
             scene.add(ambientLight);
 
@@ -747,7 +799,6 @@ function verifyToken(req, res, next) {
             pointLight.position.set(5, 5, 5);
             scene.add(pointLight);
 
-            // Mouse interaction tracking
             let mouseX = 0;
             let mouseY = 0;
             let targetX = 0;
@@ -758,20 +809,17 @@ function verifyToken(req, res, next) {
                 mouseY = (event.clientY - window.innerHeight / 2) / 200;
             });
 
-            // Responsive Window Resizing
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Animation Loop
             const clock = new THREE.Clock();
             function animate() {
                 requestAnimationFrame(animate);
                 const elapsedTime = clock.getElapsedTime();
 
-                // Smooth rotation
                 targetX += (mouseX - targetX) * 0.05;
                 targetY += (mouseY - targetY) * 0.05;
 
@@ -785,9 +833,8 @@ function verifyToken(req, res, next) {
         initThreeHero();
 
         // ==========================================
-        // 3. UI INTERACTIONS & MOCK GENERATOR ENGINE
+        // 4. UI INTERACTIONS & MOCK GENERATOR ENGINE
         // ==========================================
-        // Mobile Menu Toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
         if(mobileMenuBtn && mobileMenu) {
@@ -796,7 +843,6 @@ function verifyToken(req, res, next) {
             });
         }
 
-        // Mock Code Generation Logic
         const generateBtn = document.getElementById('generate-btn');
         const loadingState = document.getElementById('loading-state');
         const codeResultContainer = document.getElementById('code-result-container');
@@ -859,7 +905,6 @@ function verifyToken(req, res, next) {
                 loadingState.classList.remove('hidden');
                 codeResultContainer.classList.add('hidden');
 
-                // Simulate AI generation latency for realistic UX
                 setTimeout(() => {
                     loadingState.classList.add('hidden');
                     codeResultContainer.classList.remove('hidden');
@@ -869,13 +914,11 @@ function verifyToken(req, res, next) {
                     resultFilename.textContent = snippet.filename;
                     codeOutputText.textContent = snippet.code;
 
-                    // Smooth scroll to output
                     codeResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }, 1200);
             });
         }
 
-        // Action buttons inside code card
         const copyBtn = document.getElementById('copy-btn');
         if(copyBtn) {
             copyBtn.addEventListener('click', () => {
