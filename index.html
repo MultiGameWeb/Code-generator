@@ -1,1 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Your Code Now — AI Code Generator PWA (Step 1 Foundation)</title>
+    
+    <!-- PWA Manifest Link Placeholder for Step 2 Backend / Asset Phase -->
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
+    <meta name="theme-color" content="#030712">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Get Your Code">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darker: '#010409',
+                        dark: '#030712',
+                        card: '#0b0f19',
+                        border: '#1e293b',
+                        accent: '#3b82f6',
+                        accentGlow: '#60a5fa',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['Fira Code', 'Menlo', 'Monaco', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
 
+    <!-- Three.js CDN for Lightweight 3D Background -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(11, 15, 25, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-effect {
+            box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.25);
+        }
+        .glow-border {
+            position: relative;
+        }
+        .glow-border::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+        .glow-border:hover::after {
+            opacity: 0.7;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="bg-dark text-gray-100 antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Sticky Navigation -->
+    <header class="fixed top-0 left-0 right-0 z-50 glass-panel border-b border-border/50 transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Logo -->
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center glow-effect group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-code text-white text-lg"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-lg tracking-tight text-white flex items-center gap-1.5">
+                        Get Your Code <span class="text-blue-500 font-extrabold">Now</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400 tracking-wider uppercase font-medium">AI Code Generator PWA</span>
+                </div>
+            </a>
+
+            <!-- Desktop Menu -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
+                <a href="#hero" class="hover:text-blue-400 transition-colors">Home</a>
+                <a href="#generator" class="hover:text-blue-400 transition-colors">Generator</a>
+                <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
+                <a href="#languages" class="hover:text-blue-400 transition-colors">Languages</a>
+                <a href="#pwa-section" class="hover:text-blue-400 transition-colors">PWA App</a>
+            </nav>
+
+            <!-- Right Action -->
+            <div class="hidden md:flex items-center gap-4">
+                <button id="install-btn-nav" class="hidden items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold hover:bg-blue-500/20 transition-all">
+                    <i class="fa-solid fa-download"></i> Install App
+                </button>
+                <a href="#generator" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-lg shadow-blue-600/25 transition-all transform hover:-translate-y-0.5">
+                    Start Coding
+                </a>
+            </div>
+
+            <!-- Mobile Hamburger Toggle -->
+            <button id="mobile-menu-btn" class="md:hidden text-gray-300 hover:text-white p-2 focus:outline-none" aria-label="Toggle navigation menu">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu Drawer -->
+        <div id="mobile-menu" class="hidden md:hidden glass-panel border-b border-border px-4 pt-2 pb-6 space-y-3">
+            <a href="#hero" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Home</a>
+            <a href="#generator" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Generator</a>
+            <a href="#features" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Features</a>
+            <a href="#languages" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Languages</a>
+            <a href="#pwa-section" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">PWA App</a>
+            <div class="pt-2 flex flex-col gap-2">
+                <button id="install-btn-mobile" class="hidden w-full py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-semibold justify-center items-center gap-2">
+                    <i class="fa-solid fa-download"></i> Install App
+                </button>
+                <a href="#generator" class="w-full py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-sm text-center shadow-lg shadow-blue-600/25">
+                    Start Coding
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section with 3D Background -->
+    <section id="hero" class="relative min-h-screen flex items-center justify-center pt-28 pb-20 overflow-hidden">
+        <!-- 3D WebGL Canvas Background Container -->
+        <div id="canvas-container"></div>
+
+        <!-- Gradient Ambient Lighting Overlays -->
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 blur-[140px] rounded-full pointer-events-none"></div>
+        <div class="absolute bottom-10 right-10 w-[400px] h-[400px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center lg:text-left w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                <!-- Hero Left Content -->
+                <div class="lg:col-span-7 space-y-8">
+                    <!-- Badge -->
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold tracking-wide uppercase">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        AI CODE GENERATOR • PWA FOUNDATION
+                    </div>
+
+                    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1]">
+                        GET YOUR <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">CODE NOW</span>
+                    </h1>
+
+                    <p class="text-xl sm:text-2xl font-medium text-gray-300">
+                        “Generate Code. Learn Faster. Build Better.”
+                    </p>
+
+                    <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
+                        Describe what you want to build and turn your idea into clean, usable code.
+                    </p>
+
+                    <!-- CTAs -->
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                        <a href="#generator" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-base shadow-xl shadow-blue-600/30 flex items-center justify-center gap-3 transition-all transform hover:-translate-y-0.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Start Coding
+                        </a>
+                        <a href="#features" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-panel hover:bg-white/5 text-gray-300 hover:text-white font-semibold text-base flex items-center justify-center gap-2 transition-all">
+                            Explore Features <i class="fa-solid fa-arrow-down text-xs text-gray-500"></i>
+                        </a>
+                    </div>
+
+                    <!-- Quick Metrics / Trust Indicators -->
+                    <div class="pt-6 border-t border-border/50 grid grid-cols-3 gap-6 max-w-lg mx-auto lg:mx-0 text-center lg:text-left">
+                        <div>
+                            <div class="text-2xl font-bold text-white">11+</div>
+                            <div class="text-xs text-gray-400">Languages Supported</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white">Instant</div>
+                            <div class="text-xs text-gray-400">UI Prototype Preview</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-white">PWA</div>
+                            <div class="text-xs text-gray-400">Install Ready Structure</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Right Graphic Preview Element (Floating Glass Card) -->
+                <div class="lg:col-span-5 hidden lg:block">
+                    <div class="relative mx-auto w-full max-w-md">
+                        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-blue-600 to-purple-600 opacity-30 blur-xl"></div>
+                        <div class="relative glass-panel rounded-3xl p-6 border border-border shadow-2xl space-y-4">
+                            <div class="flex items-center justify-between border-b border-border pb-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+                                </div>
+                                <span class="text-xs font-mono text-gray-400">ai_generator.py</span>
+                            </div>
+                            <pre class="font-mono text-xs text-blue-300 overflow-x-auto p-2 bg-darker/60 rounded-xl border border-border/50 leading-relaxed"><code><span class="text-purple-400">def</span> <span class="text-blue-400">generate_code</span>(prompt):
+    <span class="text-gray-500"># Step 1 Frontend prototype mode</span>
+    ai_engine = <span class="text-yellow-300">GetYourCodeNow</span>()
+    <span class="text-purple-400">return</span> ai_engine.mock_output(prompt)
+
+<span class="text-gray-500"># Ready for Step 2 Node.js + Gemini API backend</span>
+output = generate_code(<span class="text-green-300">"Build awesome app"</span>)
+print(output)</code></pre>
+                            <div class="flex items-center justify-between pt-2 text-xs text-gray-400 font-mono">
+                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> Step 1 UI Prototype</span>
+                                <span>Python 3.11</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Generator Preview Section -->
+    <section id="generator" class="py-24 relative bg-darker/50 border-t border-border/50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center space-y-4 mb-12">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Interactive Code Generator</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Test out the frontend UI preview mock engine. Select your language and submit your prompt.</p>
+            </div>
+
+            <!-- Generator Box -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
+                <!-- Requirement Input -->
+                <div class="space-y-2">
+                    <label for="prompt-input" class="block text-sm font-semibold text-gray-300">What do you want to build?</label>
+                    <div class="relative">
+                        <textarea id="prompt-input" rows="3" class="w-full bg-darker/80 border border-border rounded-2xl p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-sans text-sm transition-all resize-none" placeholder="What do you want to build?">Create a Python calculator with addition, subtraction, multiplication and division.</textarea>
+                    </div>
+                </div>
+
+                <!-- Language Selector & Button Grid -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="w-full sm:w-auto flex-1">
+                        <label for="language-select" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Target Language</label>
+                        <div class="relative">
+                            <select id="language-select" class="w-full sm:w-64 bg-darker/80 border border-border rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer">
+                                <option value="Python" selected>Python</option>
+                                <option value="JavaScript">JavaScript</option>
+                                <option value="TypeScript">TypeScript</option>
+                                <option value="HTML">HTML</option>
+                                <option value="CSS">CSS</option>
+                                <option value="Java">Java</option>
+                                <option value="C">C</option>
+                                <option value="C++">C++</option>
+                                <option value="C#">C#</option>
+                                <option value="PHP">PHP</option>
+                                <option value="SQL">SQL</option>
+                            </select>
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full sm:w-auto self-end">
+                        <button id="generate-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Code
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State (Hidden by default) -->
+                <div id="loading-state" class="hidden py-12 text-center space-y-4">
+                    <div class="inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="text-sm font-medium text-gray-300 animate-pulse">Simulating code synthesis preview...</div>
+                </div>
+
+                <!-- Code Result Card (Hidden until generated) -->
+                <div id="code-result-container" class="hidden pt-4 space-y-4 animate-fadeIn">
+                    <div class="glass-panel rounded-2xl border border-border overflow-hidden">
+                        <!-- Code Output Header Bar -->
+                        <div class="bg-darker/90 px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <span id="result-lang-badge" class="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs font-semibold">Python</span>
+                                <span id="result-filename" class="text-xs font-mono text-gray-400">calculator.py</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button id="copy-btn" title="Copy Code" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5">
+                                    <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Copy</span>
+                                </button>
+                                <button id="download-btn" title="Download File" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5">
+                                    <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Download</span>
+                                </button>
+                                <button id="regenerate-btn" title="Regenerate" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5">
+                                    <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Regenerate</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Code Content Box -->
+                        <div class="p-4 bg-darker/60 overflow-x-auto max-h-[400px]">
+                            <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed" id="code-output-text"><code>def add(a, b):
+    return a + b
+
+def subtract(a, b):
+    return a - b
+
+def multiply(a, b):
+    return a * b
+
+def divide(a, b):
+    if b == 0:
+        return "Error! Division by zero."
+    return a / b
+
+if __name__ == "__main__":
+    print("=== Python Calculator ===")
+    print("1. Add\n2. Subtract\n3. Multiply\n4. Divide")
+    # Step 1 Frontend Mock Code Output</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Developer Experience Section (Split Layout) -->
+    <section class="py-24 relative border-t border-border/50 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center space-y-4 mb-16">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">From Idea → Working Code</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Experience seamless structural translation from natural prompt specification to clean executable logic.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <!-- Left: Prompt Text -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border space-y-4">
+                    <div class="flex items-center gap-2 text-blue-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                        <i class="fa-solid fa-terminal"></i> Step 1: Natural User Input
+                    </div>
+                    <div class="p-4 rounded-2xl bg-darker border border-border text-gray-300 font-sans text-sm sm:text-base">
+                        “Create a secure user authentication middleware node service with JWT verification and role-based permissions.”
+                    </div>
+                    <p class="text-xs text-gray-500 font-light">
+                        Express requirements plain and simple. No rigid syntax required—our upcoming Gemini AI layer will handle natural language processing effortlessly.
+                    </p>
+                </div>
+
+                <!-- Right: Generated Output Preview -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border space-y-4">
+                    <div class="flex items-center gap-2 text-emerald-400 font-mono text-xs uppercase tracking-wider font-semibold">
+                        <i class="fa-solid fa-code"></i> Step 2: Clean Code Delivery
+                    </div>
+                    <div class="p-4 rounded-2xl bg-darker border border-border overflow-x-auto">
+                        <pre class="font-mono text-xs text-blue-300"><code>const jwt = require('jsonwebtoken');
+
+function verifyToken(req, res, next) {
+  const token = req.headers['authorization'];
+  if (!token) return res.status(403).json({ error: 'Token required' });
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ error: 'Invalid token' });
+    req.user = decoded;
+    next();
+  });
+}</code></pre>
+                    </div>
+                    <p class="text-xs text-gray-500 font-light">
+                        Instantly formatted, syntax-highlighted, and structured to deploy straight into your workspace.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature Section -->
+    <section id="features" class="py-24 bg-darker/30 border-t border-border/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center space-y-4 mb-16">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-xs font-semibold uppercase">
+                    Core Capabilities
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white">Everything You Need to Code Faster</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Built from the ground up for modern developers, students, and software engineers.</p>
+            </div>
+
+            <!-- 4 Modern Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Card 1 -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-brain"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">AI Code Generation</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Generate code from natural-language requirements.
+                        </p>
+                    </div>
+                    <div class="pt-6 mt-6 border-t border-border/50 flex items-center gap-1 text-xs text-blue-400 font-semibold">
+                        <span>Learn more</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Multiple Languages</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Work with popular programming languages across standard engineering stacks.
+                        </p>
+                    </div>
+                    <div class="pt-6 mt-6 border-t border-border/50 flex items-center gap-1 text-xs text-indigo-400 font-semibold">
+                        <span>View languages</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Learn While Building</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Understand generated code with clear explanations and structured logic breakdowns.
+                        </p>
+                    </div>
+                    <div class="pt-6 mt-6 border-t border-border/50 flex items-center gap-1 text-xs text-purple-400 font-semibold">
+                        <span>Explore insights</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border hover:border-blue-500/50 transition-all group flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg group-hover:scale-110 transition-transform">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white">Install as an App</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">
+                            Use the PWA directly from your phone or desktop screen.
+                        </p>
+                    </div>
+                    <div class="pt-6 mt-6 border-t border-border/50 flex items-center gap-1 text-xs text-emerald-400 font-semibold">
+                        <span>PWA setup</span> <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="py-24 border-t border-border/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center space-y-4 mb-16">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white">How It Works</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Get from concept to deployment in three straightforward steps.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                <!-- Step 1 -->
+                <div class="glass-panel rounded-3xl p-8 border border-border relative space-y-4 text-center md:text-left">
+                    <div class="text-4xl font-black text-blue-500/30 font-mono">01 — Describe</div>
+                    <h3 class="text-xl font-bold text-white">Tell the AI what you want to build.</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Input your requirement description clearly into the prompt generator box.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-panel rounded-3xl p-8 border border-border relative space-y-4 text-center md:text-left">
+                    <div class="text-4xl font-black text-indigo-500/30 font-mono">02 — Generate</div>
+                    <h3 class="text-xl font-bold text-white">Get code generated for your requirement.</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Receive code generated instantly across your selected programming target.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-panel rounded-3xl p-8 border border-border relative space-y-4 text-center md:text-left">
+                    <div class="text-4xl font-black text-purple-500/30 font-mono">03 — Build</div>
+                    <h3 class="text-xl font-bold text-white">Copy, edit and use the generated code.</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Export or copy your solution straight into your production workspace.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Supported Languages Showcase -->
+    <section id="languages" class="py-24 bg-darker/50 border-t border-border/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center space-y-4 mb-16">
+                <h2 class="text-3xl sm:text-4xl font-bold text-white">Supported Languages</h2>
+                <p class="text-gray-400 max-w-xl mx-auto">Generate code across an expansive ecosystem of standard programming languages.</p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Language Badges -->
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-brands fa-python text-2xl text-blue-400"></i>
+                    <span class="text-sm font-semibold text-gray-200">Python</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-brands fa-js text-2xl text-yellow-400"></i>
+                    <span class="text-sm font-semibold text-gray-200">JavaScript</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-code text-2xl text-blue-500"></i>
+                    <span class="text-sm font-semibold text-gray-200">TypeScript</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-brands fa-html5 text-2xl text-orange-500"></i>
+                    <span class="text-sm font-semibold text-gray-200">HTML</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-brands fa-css3-alt text-2xl text-blue-400"></i>
+                    <span class="text-sm font-semibold text-gray-200">CSS</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-brands fa-java text-2xl text-red-500"></i>
+                    <span class="text-sm font-semibold text-gray-200">Java</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-c text-2xl text-blue-300"></i>
+                    <span class="text-sm font-semibold text-gray-200">C</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus text-2xl text-indigo-400"></i>
+                    <span class="text-sm font-semibold text-gray-200">C++</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-hashtag text-2xl text-purple-400"></i>
+                    <span class="text-sm font-semibold text-gray-200">C#</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-brands fa-php text-2xl text-indigo-300"></i>
+                    <span class="text-sm font-semibold text-gray-200">PHP</span>
+                </div>
+                <div class="glass-panel rounded-2xl p-4 border border-border text-center hover:border-blue-500/50 transition-all flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-database text-2xl text-emerald-400"></i>
+                    <span class="text-sm font-semibold text-gray-200">SQL</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PWA Dedicated Section -->
+    <section id="pwa-section" class="py-24 border-t border-border/50 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-6 space-y-6">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold uppercase">
+                        Progressive Web App Foundation
+                    </div>
+                    <h2 class="text-3xl sm:text-5xl font-bold text-white tracking-tight">Your Coding Tool. Anywhere.</h2>
+                    <p class="text-gray-400 text-base sm:text-lg leading-relaxed">
+                        Designed to be installed directly onto your phone, tablet, or desktop. Prepared for offline caching structures in the next PWA phase.
+                    </p>
+
+                    <div class="space-y-3 pt-2">
+                        <div class="flex items-center gap-3 text-gray-300 text-sm">
+                            <i class="fa-solid fa-check text-emerald-400"></i> Prepared for offline caching in the next PWA phase
+                        </div>
+                        <div class="flex items-center gap-3 text-gray-300 text-sm">
+                            <i class="fa-solid fa-check text-emerald-400"></i> Lightning-fast loading performance structure
+                        </div>
+                        <div class="flex items-center gap-3 text-gray-300 text-sm">
+                            <i class="fa-solid fa-check text-emerald-400"></i> Standalone app-style navigation window layout
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button id="pwa-install-main-btn" class="px-8 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/25 flex items-center gap-3 transition-all">
+                            <i class="fa-solid fa-download"></i> Install App Now
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right visual mockup representation -->
+                <div class="lg:col-span-6 flex justify-center">
+                    <div class="relative w-full max-w-md">
+                        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-emerald-600 to-blue-600 opacity-30 blur-xl"></div>
+                        <div class="glass-panel rounded-3xl p-8 border border-border shadow-2xl space-y-6 text-center">
+                            <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center mx-auto text-white text-2xl glow-effect">
+                                <i class="fa-solid fa-code"></i>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-bold text-white">Get Your Code Now</h3>
+                                <p class="text-xs text-gray-400 font-mono">PWA Step 1 Architecture</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-darker border border-border text-left space-y-2 text-xs text-gray-300 font-mono">
+                                <div class="flex justify-between"><span>PWA Foundation:</span> <span class="text-emerald-400">Ready</span></div>
+                                <div class="flex justify-between"><span>Service Worker:</span> <span class="text-blue-400">Step 2</span></div>
+                                <div class="flex justify-between"><span>Install Support:</span> <span class="text-purple-400">Browser Dependent</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-darker border-t border-border py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="space-y-2 text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-2 text-white font-bold text-lg">
+                    <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    Get Your Code Now
+                </div>
+                <p class="text-xs text-gray-400">“Build faster with AI-powered coding.” Built as a Progressive Web App.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
+                <a href="#hero" class="hover:text-blue-400 transition-colors">Home</a>
+                <a href="#generator" class="hover:text-blue-400 transition-colors">Generator</a>
+                <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
+                <a href="#" class="hover:text-blue-400 transition-colors">Privacy</a>
+                <a href="#" class="hover:text-blue-400 transition-colors">Terms</a>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-border/50 text-center text-xs text-gray-500 font-mono">
+            © 2026 Get Your Code Now. Step 1 UI & PWA Prototype Foundation. Backend & Gemini API ready.
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic & PWA Installation Setup -->
+    <script>
+        // ==========================================
+        // 1. PWA INSTALLATION PROMPT MANAGEMENT
+        // ==========================================
+        let deferredPrompt;
+        const installButtons = [
+            document.getElementById('install-btn-nav'),
+            document.getElementById('install-btn-mobile'),
+            document.getElementById('pwa-install-main-btn')
+        ];
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installButtons.forEach(btn => {
+                if(btn) {
+                    btn.classList.remove('hidden');
+                    btn.classList.add('flex');
+                }
+            });
+        });
+
+        installButtons.forEach(btn => {
+            if(btn) {
+                btn.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            console.log('User accepted the PWA install prompt');
+                        }
+                        deferredPrompt = null;
+                    } else {
+                        alert('PWA installation is ready! If the install button is hidden, use your browser menu options to "Install App" or "Add to Home Screen".');
+                    }
+                });
+            }
+        });
+
+        // ==========================================
+        // 2. THREE.JS 3D HERO BACKGROUND ANIMATION
+        // ==========================================
+        function initThreeHero() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 7;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // Safeguard mobile performance by limiting pixel ratio
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            container.appendChild(renderer.domElement);
+
+            // Create a floating group of glowing 3D symbols / shapes representing code blocks
+            const group = new THREE.Group();
+            scene.add(group);
+
+            // Torus Knot / Code Core geometry
+            const geometry = new THREE.TorusKnotGeometry(1.4, 0.4, 64, 16);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x3b82f6,
+                roughness: 0.3,
+                metalness: 0.8,
+                wireframe: true
+            });
+            const codeCore = new THREE.Mesh(geometry, material);
+            group.add(codeCore);
+
+            // Ambient & Point Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x60a5fa, 3, 50);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            // Mouse interaction tracking
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - window.innerWidth / 2) / 200;
+                mouseY = (event.clientY - window.innerHeight / 2) / 200;
+            });
+
+            // Responsive Window Resizing
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                const elapsedTime = clock.getElapsedTime();
+
+                // Smooth rotation
+                targetX += (mouseX - targetX) * 0.05;
+                targetY += (mouseY - targetY) * 0.05;
+
+                codeCore.rotation.x = elapsedTime * 0.15 + targetY;
+                codeCore.rotation.y = elapsedTime * 0.2 + targetX;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+        initThreeHero();
+
+        // ==========================================
+        // 3. UI INTERACTIONS & MOCK GENERATOR ENGINE
+        // ==========================================
+        // Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if(mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Mock Code Generation Logic
+        const generateBtn = document.getElementById('generate-btn');
+        const loadingState = document.getElementById('loading-state');
+        const codeResultContainer = document.getElementById('code-result-container');
+        const languageSelect = document.getElementById('language-select');
+        const resultLangBadge = document.getElementById('result-lang-badge');
+        const resultFilename = document.getElementById('result-filename');
+        const codeOutputText = document.getElementById('code-output-text');
+        const promptInput = document.getElementById('prompt-input');
+
+        const mockSnippets = {
+            Python: {
+                filename: "calculator.py",
+                code: `def add(a, b): return a + b\ndef subtract(a, b): return a - b\ndef multiply(a, b): return a * b\ndef divide(a, b): return a / b if b != 0 else "Error: Division by zero"\n\nif __name__ == "__main__":\n    print("Python Calculator Engine Active")`
+            },
+            JavaScript: {
+                filename: "calculator.js",
+                code: `const calculator = {\n  add: (a, b) => a + b,\n  subtract: (a, b) => a - b,\n  multiply: (a, b) => a * b,\n  divide: (a, b) => b !== 0 ? a / b : "Error: Division by zero"\n};\n\nconsole.log("JS Calculator Ready:", calculator.add(10, 5));`
+            },
+            TypeScript: {
+                filename: "calculator.ts",
+                code: `interface CalcOperations {\n  add(a: number, b: number): number;\n  divide(a: number, b: number): number | string;\n}\n\nclass Calculator implements CalcOperations {\n  add(a: number, b: number): number { return a + b; }\n  divide(a: number, b: number) { return b === 0 ? "Error" : a / b; }\n}`
+            },
+            HTML: {
+                filename: "index.html",
+                code: `<!DOCTYPE html>\n<html lang="en">\n<head><title>Calculator App</title></head>\n<body class="bg-gray-900 text-white p-8">\n  <div id="app"><h1>Calculator UI Mockup</h1></div>\n</body>\n</html>`
+            },
+            CSS: {
+                filename: "styles.css",
+                code: `.calc-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }\n.calc-btn { background: #3b82f6; color: white; padding: 1rem; border-radius: 0.75rem; font-weight: bold; }`
+            },
+            Java: {
+                filename: "Calculator.java",
+                code: `public class Calculator {\n    public static double add(double a, double b) { return a + b; }\n    public static void main(String[] args) {\n        System.out.println("Java Calculator Initialized: " + add(5.5, 4.5));\n    }\n}`
+            },
+            C: {
+                filename: "calculator.c",
+                code: `#include <stdio.h>\n\nfloat add(float a, float b) { return a + b; }\n\nint main() {\n    printf("C Calculator Result: %.2f\\n", add(12.0, 8.0));\n    return 0;\n}`
+            },
+            "C++": {
+                filename: "calculator.cpp",
+                code: `#include <iostream>\nusing namespace std;\n\nclass Calculator {\npublic:\n    double add(double a, double b) { return a + b; }\n};\n\nint main() {\n    Calculator calc;\n    cout << "C++ Result: " << calc.add(20, 30) << endl;\n}`
+            },
+            "C#": {
+                filename: "Calculator.cs",
+                code: `using System;\n\nnamespace CodeGeneratorApp {\n    class Program {\n        static void Main(string[] args) {\n            Console.WriteLine("C# AI Code Engine Ready.");\n        }\n    }\n}`
+            },
+            PHP: {
+                filename: "calculator.php",
+                code: `<?php\nclass Calculator {\n    public function add($a, $b) { return $a + $b; }\n}\n$calc = new Calculator();\necho "PHP Result: " . $calc->add(15, 25);\n?>`
+            },
+            SQL: {
+                filename: "query.sql",
+                code: `CREATE TABLE generated_codes (\n    id INT AUTO_INCREMENT PRIMARY KEY,\n    prompt_text TEXT NOT NULL,\n    language VARCHAR(50) NOT NULL,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nSELECT * FROM generated_codes WHERE language = 'Python';`
+            }
+        };
+
+        if(generateBtn) {
+            generateBtn.addEventListener('click', () => {
+                const selectedLang = languageSelect.value;
+                loadingState.classList.remove('hidden');
+                codeResultContainer.classList.add('hidden');
+
+                // Simulate AI generation latency for realistic UX
+                setTimeout(() => {
+                    loadingState.classList.add('hidden');
+                    codeResultContainer.classList.remove('hidden');
+
+                    const snippet = mockSnippets[selectedLang] || mockSnippets["Python"];
+                    resultLangBadge.textContent = selectedLang;
+                    resultFilename.textContent = snippet.filename;
+                    codeOutputText.textContent = snippet.code;
+
+                    // Smooth scroll to output
+                    codeResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 1200);
+            });
+        }
+
+        // Action buttons inside code card
+        const copyBtn = document.getElementById('copy-btn');
+        if(copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(codeOutputText.textContent);
+                copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                }, 2000);
+            });
+        }
+
+        const downloadBtn = document.getElementById('download-btn');
+        if(downloadBtn) {
+            downloadBtn.addEventListener('click', () => {
+                const blob = new Blob([codeOutputText.textContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = resultFilename.textContent;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        const regenerateBtn = document.getElementById('regenerate-btn');
+        if(regenerateBtn) {
+            regenerateBtn.addEventListener('click', () => {
+                generateBtn.click();
+            });
+        }
+    </script>
+</body>
+</html>
