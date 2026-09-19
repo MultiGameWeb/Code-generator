@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get Your Code Now — AI Code Generator PWA (Step 2 PWA Foundation)</title>
+    <title>Get Your Code Now — AI Code Generator PWA (Step 3C Production)</title>
     
     <!-- PWA Manifest Link -->
     <link rel="manifest" href="./manifest.json" crossorigin="use-credentials">
@@ -168,7 +168,7 @@
                 <div class="lg:col-span-7 space-y-8">
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold tracking-wide uppercase">
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        AI CODE GENERATOR • PWA FOUNDATION
+                        AI CODE GENERATOR • GEMINI INTEGRATED
                     </div>
 
                     <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1]">
@@ -180,7 +180,7 @@
                     </p>
 
                     <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
-                        Describe what you want to build and turn your idea into clean, usable code.
+                        Describe what you want to build and turn your idea into clean, usable code using Google Gemini AI.
                     </p>
 
                     <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -198,8 +198,8 @@
                             <div class="text-xs text-gray-400">Languages Supported</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold text-white">Instant</div>
-                            <div class="text-xs text-gray-400">UI Prototype Preview</div>
+                            <div class="text-2xl font-bold text-white">Gemini</div>
+                            <div class="text-xs text-gray-400">AI Powered Backend</div>
                         </div>
                         <div>
                             <div class="text-2xl font-bold text-white">PWA</div>
@@ -218,18 +218,19 @@
                                     <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
                                     <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
                                 </div>
-                                <span class="text-xs font-mono text-gray-400">ai_generator.py</span>
+                                <span class="text-xs font-mono text-gray-400">ai_generator.js</span>
                             </div>
-                            <pre class="font-mono text-xs text-blue-300 overflow-x-auto p-2 bg-darker/60 rounded-xl border border-border/50 leading-relaxed"><code><span class="text-purple-400">def</span> <span class="text-blue-400">generate_code</span>(prompt):
-    <span class="text-gray-500"># Step 2 PWA Foundation mode</span>
-    ai_engine = <span class="text-yellow-300">GetYourCodeNow</span>()
-    <span class="text-purple-400">return</span> ai_engine.mock_output(prompt)
-
-output = generate_code(<span class="text-green-300">"Build awesome app"</span>)
-print(output)</code></pre>
+                            <pre class="font-mono text-xs text-blue-300 overflow-x-auto p-2 bg-darker/60 rounded-xl border border-border/50 leading-relaxed"><code><span class="text-purple-400">async function</span> <span class="text-blue-400">generateCode</span>(prompt) {
+  <span class="text-gray-500">// Step 3C Production Render API</span>
+  <span class="text-purple-400">const</span> res = <span class="text-purple-400">await</span> fetch(<span class="text-green-300">"https://get-your-code-now-api.onrender.com/api/generate"</span>, {
+    method: <span class="text-green-300">"POST"</span>,
+    body: JSON.stringify({ prompt })
+  });
+  <span class="text-purple-400">return</span> <span class="text-purple-400">await</span> res.json();
+}</code></pre>
                             <div class="flex items-center justify-between pt-2 text-xs text-gray-400 font-mono">
-                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> PWA Foundation</span>
-                                <span>Python 3.11</span>
+                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> Render Production API</span>
+                                <span>Node.js API</span>
                             </div>
                         </div>
                     </div>
@@ -238,12 +239,12 @@ print(output)</code></pre>
         </div>
     </section>
 
-    <!-- Main Generator Preview Section -->
+    <!-- Main Generator Section -->
     <section id="generator" class="py-24 relative bg-darker/50 border-t border-border/50">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center space-y-4 mb-12">
                 <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Interactive Code Generator</h2>
-                <p class="text-gray-400 max-w-xl mx-auto">Test out the frontend UI preview mock engine. Select your language and submit your prompt.</p>
+                <p class="text-gray-400 max-w-xl mx-auto">Generate production-ready code instantly using Google Gemini AI. Select your language and submit your prompt.</p>
             </div>
 
             <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
@@ -284,11 +285,19 @@ print(output)</code></pre>
                     </div>
                 </div>
 
-                <div id="loading-state" class="hidden py-12 text-center space-y-4">
-                    <div class="inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    <div class="text-sm font-medium text-gray-300 animate-pulse">Simulating code synthesis preview...</div>
+                <!-- Error Alert Box -->
+                <div id="error-alert" class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                    <span id="error-message-text">Unable to generate code right now. Please try again.</span>
                 </div>
 
+                <!-- Loading State -->
+                <div id="loading-state" class="hidden py-12 text-center space-y-4">
+                    <div class="inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="text-sm font-medium text-gray-300 animate-pulse">Querying Google Gemini AI via Render backend...</div>
+                </div>
+
+                <!-- Code Result Container -->
                 <div id="code-result-container" class="hidden pt-4 space-y-4 animate-fadeIn">
                     <div class="glass-panel rounded-2xl border border-border overflow-hidden">
                         <div class="bg-darker/90 px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
@@ -309,23 +318,7 @@ print(output)</code></pre>
                             </div>
                         </div>
                         <div class="p-4 bg-darker/60 overflow-x-auto max-h-[400px]">
-                            <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed" id="code-output-text"><code>def add(a, b):
-    return a + b
-
-def subtract(a, b):
-    return a - b
-
-def multiply(a, b):
-    return a * b
-
-def divide(a, b):
-    if b == 0:
-        return "Error! Division by zero."
-    return a / b
-
-if __name__ == "__main__":
-    print("=== Python Calculator ===")
-    print("1. Add\n2. Subtract\n3. Multiply\n4. Divide")</code></pre>
+                            <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed" id="code-output-text"><code>// Generated code will appear here...</code></pre>
                         </div>
                     </div>
                 </div>
@@ -589,7 +582,7 @@ function verifyToken(req, res, next) {
                             </div>
                             <div class="space-y-2">
                                 <h3 class="text-xl font-bold text-white">Get Your Code Now</h3>
-                                <p class="text-xs text-gray-400 font-mono">PWA Step 2 Architecture</p>
+                                <p class="text-xs text-gray-400 font-mono">PWA Step 3C Production</p>
                             </div>
                             <div class="p-4 rounded-2xl bg-darker border border-border text-left space-y-2 text-xs text-gray-300 font-mono">
                                 <div class="flex justify-between"><span>PWA Status:</span> <span id="pwa-status-text" class="text-yellow-400">Checking...</span></div>
@@ -626,14 +619,19 @@ function verifyToken(req, res, next) {
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-border/50 text-center text-xs text-gray-500 font-mono">
-            Step 2 — PWA Foundation. Backend and Gemini API integration will be added later.
+            Step 3C — Production Render Backend Integration Complete.
         </div>
     </footer>
 
-    <!-- Application Logic & Lifecycle-Aware PWA Management -->
+    <!-- Application Logic & Production Render API Connection Script -->
     <script>
         // ==========================================
-        // 1. LIFECYCLE-AWARE SERVICE WORKER STATUS
+        // 1. PRODUCTION API BASE URL CONFIGURATION
+        // ==========================================
+        const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || "https://get-your-code-now-api.onrender.com";
+
+        // ==========================================
+        // 2. LIFECYCLE-AWARE SERVICE WORKER STATUS
         // ==========================================
         const pwaStatusText = document.getElementById('pwa-status-text');
         const swStatusText = document.getElementById('sw-status-text');
@@ -645,9 +643,6 @@ function verifyToken(req, res, next) {
                 
                 navigator.serviceWorker.register('./service-worker.js')
                     .then((registration) => {
-                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                        
-                        // Check active worker state accurately
                         const worker = registration.installing || registration.waiting || registration.active;
                         if (worker) {
                             updateWorkerState(worker);
@@ -697,7 +692,7 @@ function verifyToken(req, res, next) {
         }
 
         // ==========================================
-        // 2. REAL BROWSER INSTALL SUPPORT DETECTION
+        // 3. REAL BROWSER INSTALL SUPPORT DETECTION
         // ==========================================
         let deferredPrompt;
         const installButtons = [
@@ -706,7 +701,6 @@ function verifyToken(req, res, next) {
             document.getElementById('pwa-install-main-btn')
         ];
 
-        // Default initial browser-dependent state before event fires
         if(installSupportText) {
             installSupportText.textContent = 'Browser Dependent';
         }
@@ -746,7 +740,6 @@ function verifyToken(req, res, next) {
         });
 
         window.addEventListener('appinstalled', () => {
-            console.log('PWA was successfully installed');
             if(installSupportText) {
                 installSupportText.textContent = 'Installed';
                 installSupportText.className = 'text-emerald-400';
@@ -764,7 +757,7 @@ function verifyToken(req, res, next) {
         });
 
         // ==========================================
-        // 3. THREE.JS 3D HERO BACKGROUND ANIMATION
+        // 4. THREE.JS 3D HERO BACKGROUND ANIMATION
         // ==========================================
         function initThreeHero() {
             const container = document.getElementById('canvas-container');
@@ -833,7 +826,7 @@ function verifyToken(req, res, next) {
         initThreeHero();
 
         // ==========================================
-        // 4. UI INTERACTIONS & MOCK GENERATOR ENGINE
+        // 5. MOBILE MENU & UI INTERACTIONS
         // ==========================================
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -843,82 +836,82 @@ function verifyToken(req, res, next) {
             });
         }
 
+        // ==========================================
+        // 6. PRODUCTION RENDER API GENERATOR CLIENT
+        // ==========================================
         const generateBtn = document.getElementById('generate-btn');
         const loadingState = document.getElementById('loading-state');
         const codeResultContainer = document.getElementById('code-result-container');
+        const errorAlert = document.getElementById('error-alert');
+        const errorMessageText = document.getElementById('error-message-text');
         const languageSelect = document.getElementById('language-select');
         const resultLangBadge = document.getElementById('result-lang-badge');
         const resultFilename = document.getElementById('result-filename');
         const codeOutputText = document.getElementById('code-output-text');
         const promptInput = document.getElementById('prompt-input');
 
-        const mockSnippets = {
-            Python: {
-                filename: "calculator.py",
-                code: `def add(a, b): return a + b\ndef subtract(a, b): return a - b\ndef multiply(a, b): return a * b\ndef divide(a, b): return a / b if b != 0 else "Error: Division by zero"\n\nif __name__ == "__main__":\n    print("Python Calculator Engine Active")`
-            },
-            JavaScript: {
-                filename: "calculator.js",
-                code: `const calculator = {\n  add: (a, b) => a + b,\n  subtract: (a, b) => a - b,\n  multiply: (a, b) => a * b,\n  divide: (a, b) => b !== 0 ? a / b : "Error: Division by zero"\n};\n\nconsole.log("JS Calculator Ready:", calculator.add(10, 5));`
-            },
-            TypeScript: {
-                filename: "calculator.ts",
-                code: `interface CalcOperations {\n  add(a: number, b: number): number;\n  divide(a: number, b: number): number | string;\n}\n\nclass Calculator implements CalcOperations {\n  add(a: number, b: number): number { return a + b; }\n  divide(a: number, b: number) { return b === 0 ? "Error" : a / b; }\n}`
-            },
-            HTML: {
-                filename: "index.html",
-                code: `<!DOCTYPE html>\n<html lang="en">\n<head><title>Calculator App</title></head>\n<body class="bg-gray-900 text-white p-8">\n  <div id="app"><h1>Calculator UI Mockup</h1></div>\n</body>\n</html>`
-            },
-            CSS: {
-                filename: "styles.css",
-                code: `.calc-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }\n.calc-btn { background: #3b82f6; color: white; padding: 1rem; border-radius: 0.75rem; font-weight: bold; }`
-            },
-            Java: {
-                filename: "Calculator.java",
-                code: `public class Calculator {\n    public static double add(double a, double b) { return a + b; }\n    public static void main(String[] args) {\n        System.out.println("Java Calculator Initialized: " + add(5.5, 4.5));\n    }\n}`
-            },
-            C: {
-                filename: "calculator.c",
-                code: `#include <stdio.h>\n\nfloat add(float a, float b) { return a + b; }\n\nint main() {\n    printf("C Calculator Result: %.2f\\n", add(12.0, 8.0));\n    return 0;\n}`
-            },
-            "C++": {
-                filename: "calculator.cpp",
-                code: `#include <iostream>\nusing namespace std;\n\nclass Calculator {\npublic:\n    double add(double a, double b) { return a + b; }\n};\n\nint main() {\n    Calculator calc;\n    cout << "C++ Result: " << calc.add(20, 30) << endl;\n}`
-            },
-            "C#": {
-                filename: "Calculator.cs",
-                code: `using System;\n\nnamespace CodeGeneratorApp {\n    class Program {\n        static void Main(string[] args) {\n            Console.WriteLine("C# AI Code Engine Ready.");\n        }\n    }\n}`
-            },
-            PHP: {
-                filename: "calculator.php",
-                code: `<?php\nclass Calculator {\n    public function add($a, $b) { return $a + $b; }\n}\n$calc = new Calculator();\necho "PHP Result: " . $calc->add(15, 25);\n?>`
-            },
-            SQL: {
-                filename: "query.sql",
-                code: `CREATE TABLE generated_codes (\n    id INT AUTO_INCREMENT PRIMARY KEY,\n    prompt_text TEXT NOT NULL,\n    language VARCHAR(50) NOT NULL,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nSELECT * FROM generated_codes WHERE language = 'Python';`
+        let isGenerating = false;
+
+        async function handleCodeGeneration() {
+            if (isGenerating) return;
+
+            const prompt = promptInput.value.trim();
+            const language = languageSelect.value;
+
+            if (!prompt) {
+                errorMessageText.textContent = "Please enter what you want to build.";
+                errorAlert.classList.remove('hidden');
+                return;
             }
-        };
 
-        if(generateBtn) {
-            generateBtn.addEventListener('click', () => {
-                const selectedLang = languageSelect.value;
-                loadingState.classList.remove('hidden');
-                codeResultContainer.classList.add('hidden');
+            isGenerating = true;
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            loadingState.classList.remove('hidden');
+            codeResultContainer.classList.add('hidden');
+            errorAlert.classList.add('hidden');
 
-                setTimeout(() => {
-                    loadingState.classList.add('hidden');
-                    codeResultContainer.classList.remove('hidden');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/generate`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ prompt, language })
+                });
 
-                    const snippet = mockSnippets[selectedLang] || mockSnippets["Python"];
-                    resultLangBadge.textContent = selectedLang;
-                    resultFilename.textContent = snippet.filename;
-                    codeOutputText.textContent = snippet.code;
+                const data = await response.json();
 
-                    codeResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 1200);
-            });
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || "Unable to generate code right now. Please try again.");
+                }
+
+                // Success rendering flow using real backend properties
+                resultLangBadge.textContent = data.language;
+                resultFilename.textContent = data.filename;
+                codeOutputText.textContent = data.code;
+
+                loadingState.classList.add('hidden');
+                codeResultContainer.classList.remove('hidden');
+                codeResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (err) {
+                console.error("Code generation error:", err);
+                errorMessageText.textContent = err.message || "Unable to generate code right now. Please try again.";
+                loadingState.classList.add('hidden');
+                errorAlert.classList.remove('hidden');
+            } finally {
+                isGenerating = false;
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
 
+        if(generateBtn) {
+            generateBtn.addEventListener('click', handleCodeGeneration);
+        }
+
+        // Action buttons inside code result card
         const copyBtn = document.getElementById('copy-btn');
         if(copyBtn) {
             copyBtn.addEventListener('click', () => {
@@ -948,7 +941,7 @@ function verifyToken(req, res, next) {
         const regenerateBtn = document.getElementById('regenerate-btn');
         if(regenerateBtn) {
             regenerateBtn.addEventListener('click', () => {
-                generateBtn.click();
+                handleCodeGeneration();
             });
         }
     </script>
