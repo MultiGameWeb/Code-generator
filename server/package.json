@@ -1,9 +1,8 @@
 {
   "name": "get-your-code-now-server",
   "version": "1.0.0",
-  "description": "Node.js and Express backend with Google Gemini API for Get Your Code Now",
-  "main": "server.js",
   "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
@@ -11,10 +10,9 @@
   "dependencies": {
     "@google/genai": "^2.23.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2"
-  },
-  "keywords": ["express", "backend", "ai-code-generator", "gemini"],
-  "author": "",
-  "license": "MIT"
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0"
+  }
 }
