@@ -342,7 +342,7 @@ User requirement:
 ${trimmedPrompt}
 `.trim();
 
-    // 3. 45-Second Request Timeout & AbortController Implementation
+        // 3. 45-Second Request Timeout & AbortController with 503 Retry Logic
     const controller = new AbortController();
     let isTimedOut = false;
 
@@ -351,57 +351,173 @@ ${trimmedPrompt}
       controller.abort();
     }, 45000);
 
-    let geminiResponse;
-    try {
-      geminiResponse = await ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: generationPrompt,
-        config: {
-          systemInstruction,
-          abortSignal: controller.signal
+    // Sleep helper that respects the AbortController signal
+    const sleep = (ms, signal) =>
+      new Promise((resolve, reject) => {
+        if (signal?.aborted) {
+          return reject(new DOMException("Aborted", "AbortError"));
         }
+
+        const timer = setTimeout(resolve, ms);
+
+        signal?.addEventListener(
+          "abort",
+          () => {
+            clearTimeout(timer);
+            reject(new DOMException("Aborted", "AbortError"));
+          },
+          { once: true }
+        );
       });
-    } catch (sdkError) {
-      clearTimeout(timeoutId);
-      if (isTimedOut || sdkError.name === 'AbortError' || (sdkError.message && sdkError.message.toLowerCase().includes('aborted'))) {
-        metricsData.timeoutRequests++;
-        return res.status(504).json({
-          success: false,
-          error: "Code generation timed out. Please try again."
-        });
+
+    let geminiResponse;
+    const maxAttempts = 3;
+    let attempt = 0;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+
+      if (isTimedOut || controller.signal.aborted) {
+        break;
       }
-      throw sdkError;
+
+      try {
+        geminiResponse = await ai.models.generateContent({
+          model: MODEL_NAME,
+          contents: generationPrompt,
+          config: {
+            systemInstruction,
+            abortSignal: controller.signal
+          }
+        });
+
+        break;
+      } catch (sdkError) {
+        // Request timeout / abort
+        const errorMessage = String(sdkError?.message || "").toLowerCase();
+
+        if (
+          isTimedOut ||
+          sdkError?.name === "AbortError" ||
+          errorMessage.includes("aborted")
+        ) {
+          clearTimeout(timeoutId);
+
+          metricsData.timeoutRequests++;
+
+          return res.status(504).json({
+            success: false,
+            error: "Code generation timed out. Please try again."
+          });
+        }
+
+        // Detect temporary Gemini 503 / UNAVAILABLE errors
+        const errorStatus =
+          sdkError?.status ||
+          sdkError?.statusCode ||
+          sdkError?.response?.status;
+
+        const isTemporary503 =
+          errorStatus === 503 ||
+          errorMessage.includes("503") ||
+          errorMessage.includes("unavailable") ||
+          errorMessage.includes("service unavailable");
+
+        // Do not retry non-503 errors
+        if (!isTemporary503) {
+          clearTimeout(timeoutId);
+
+          metricsData.upstreamGenerationErrors++;
+
+          return res.status(500).json({
+            success: false,
+            error: "Unable to generate code right now. Please try again."
+          });
+        }
+
+        // Stop after 3 total attempts
+        if (attempt >= maxAttempts) {
+          clearTimeout(timeoutId);
+
+          metricsData.upstreamGenerationErrors++;
+
+          return res.status(500).json({
+            success: false,
+            error: "Unable to generate code right now. Please try again."
+          });
+        }
+
+        // Retry delays:
+        // 1st retry = 1.5 seconds
+        // 2nd retry = 3 seconds
+        const delayMs = attempt === 1 ? 1500 : 3000;
+
+        try {
+          await sleep(delayMs, controller.signal);
+        } catch (sleepError) {
+          if (isTimedOut || controller.signal.aborted) {
+            clearTimeout(timeoutId);
+
+            metricsData.timeoutRequests++;
+
+            return res.status(504).json({
+              success: false,
+              error: "Code generation timed out. Please try again."
+            });
+          }
+
+          clearTimeout(timeoutId);
+
+          metricsData.upstreamGenerationErrors++;
+
+          return res.status(500).json({
+            success: false,
+            error: "Unable to generate code right now. Please try again."
+          });
+        }
+      }
     }
 
     clearTimeout(timeoutId);
 
-    if (isTimedOut) {
+    if (isTimedOut || controller.signal.aborted) {
       metricsData.timeoutRequests++;
+
       return res.status(504).json({
         success: false,
         error: "Code generation timed out. Please try again."
       });
     }
 
-    let rawCodeText = geminiResponse && geminiResponse.text ? geminiResponse.text.trim() : "";
+    let rawCodeText =
+      geminiResponse && geminiResponse.text
+        ? geminiResponse.text.trim()
+        : "";
 
     if (!rawCodeText) {
       metricsData.upstreamGenerationErrors++;
+
       return res.status(502).json({
         success: false,
         error: "Gemini returned an empty response."
       });
     }
 
-    // Defensively clean accidental markdown code block fences if returned by the model
+    // Remove accidental Markdown code fences
     if (rawCodeText.startsWith("```")) {
       const firstNewlineIndex = rawCodeText.indexOf("\n");
+
       if (firstNewlineIndex !== -1) {
         rawCodeText = rawCodeText.substring(firstNewlineIndex + 1);
       }
+
       if (rawCodeText.endsWith("```")) {
-        rawCodeText = rawCodeText.substring(0, rawCodeText.length - 3);
+        rawCodeText = rawCodeText.substring(
+          0,
+          rawCodeText.length - 3
+        );
       }
+
       rawCodeText = rawCodeText.trim();
     }
 
