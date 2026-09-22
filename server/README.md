@@ -89,7 +89,7 @@ Example response:
 
 **Method:** `POST`
 
-The endpoint validates the request, applies rate limiting and security checks, and securely calls gemini-2.5-flash. 
+The endpoint validates the request, applies rate limiting and security checks, and securely calls gemini-3.5-flash-lite
 
 Example request:
 
