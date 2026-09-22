@@ -926,7 +926,7 @@ function verifyToken(req, res, next) {
         }
 
         // ==========================================
-        // 6. UNIFIED AI WORKSPACE
+        // 6. UNIFIED AI WORKSPACE - STREAMING
         // ==========================================
         const workspacePrompt = document.getElementById('workspace-prompt');
         const languageSelect = document.getElementById('language-select');
@@ -979,39 +979,58 @@ function verifyToken(req, res, next) {
                 </div>
             `;
             workspaceConversation.appendChild(wrapper);
+            return wrapper;
         }
 
-        function appendAiMessage(answer) {
+        function appendStreamingAiMessage() {
             const wrapper = document.createElement('div');
             wrapper.className = 'flex justify-start';
             wrapper.innerHTML = `
                 <div class="max-w-[95%] w-full rounded-2xl rounded-bl-md bg-white/[0.03] border border-border px-4 py-4">
                     <div class="flex items-center justify-between gap-3 mb-2">
                         <div class="text-[11px] uppercase tracking-wider text-purple-400 font-semibold">AI</div>
-                        <button type="button" class="copy-chat-answer px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] transition-all">
+                        <button type="button" class="copy-stream-answer px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] transition-all">
                             <i class="fa-regular fa-copy"></i> Copy
                         </button>
                     </div>
-                    <div class="chat-answer-content text-sm sm:text-base text-gray-200 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(answer)}</div>
+                    <div class="stream-answer-content text-sm sm:text-base text-gray-200 leading-relaxed whitespace-pre-wrap break-words"></div>
                 </div>
             `;
+
             workspaceConversation.appendChild(wrapper);
 
-            const copyButton = wrapper.querySelector('.copy-chat-answer');
+            const content = wrapper.querySelector('.stream-answer-content');
+            const copyButton = wrapper.querySelector('.copy-stream-answer');
+            let fullText = '';
+
             copyButton.addEventListener('click', async () => {
                 try {
-                    await navigator.clipboard.writeText(answer);
+                    await navigator.clipboard.writeText(fullText);
                     copyButton.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
                     setTimeout(() => {
                         copyButton.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
                     }, 2000);
                 } catch (error) {
-                    console.error('Copy chat answer error:', error);
+                    console.error('Copy streamed answer error:', error);
                 }
             });
+
+            return {
+                append(text) {
+                    fullText += text;
+                    content.textContent = fullText;
+                    scrollConversationToBottom();
+                },
+                getText() {
+                    return fullText;
+                },
+                remove() {
+                    wrapper.remove();
+                }
+            };
         }
 
-        function appendCodeMessage(code, language, filename) {
+        function appendStreamingCodeMessage(language, filename) {
             const wrapper = document.createElement('div');
             wrapper.className = 'flex justify-start';
             wrapper.innerHTML = `
@@ -1019,41 +1038,43 @@ function verifyToken(req, res, next) {
                     <div class="bg-darker/90 px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <span class="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs font-semibold">${escapeHtml(language)}</span>
-                            <span class="text-xs font-mono text-gray-400">${escapeHtml(filename)}</span>
+                            <span class="stream-code-filename text-xs font-mono text-gray-400">${escapeHtml(filename || '')}</span>
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" class="copy-generated-code p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors">
+                            <button type="button" class="copy-stream-code p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors">
                                 <i class="fa-regular fa-copy"></i> Copy
                             </button>
-                            <button type="button" class="download-generated-code p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors">
+                            <button type="button" class="download-stream-code p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors">
                                 <i class="fa-solid fa-download"></i> Download
                             </button>
                         </div>
                     </div>
                     <div class="p-4 bg-darker/60 overflow-x-auto max-h-[420px]">
-                        <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(code)}</pre>
+                        <pre class="stream-code-content font-mono text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words"></pre>
                     </div>
                 </div>
             `;
             workspaceConversation.appendChild(wrapper);
 
-            const copyButton = wrapper.querySelector('.copy-generated-code');
-            const downloadButton = wrapper.querySelector('.download-generated-code');
+            const content = wrapper.querySelector('.stream-code-content');
+            const copyButton = wrapper.querySelector('.copy-stream-code');
+            const downloadButton = wrapper.querySelector('.download-stream-code');
+            let fullCode = '';
 
             copyButton.addEventListener('click', async () => {
                 try {
-                    await navigator.clipboard.writeText(code);
+                    await navigator.clipboard.writeText(fullCode);
                     copyButton.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
                     setTimeout(() => {
                         copyButton.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
                     }, 2000);
                 } catch (error) {
-                    console.error('Copy generated code error:', error);
+                    console.error('Copy streamed code error:', error);
                 }
             });
 
             downloadButton.addEventListener('click', () => {
-                const blob = new Blob([code], { type: 'text/plain' });
+                const blob = new Blob([fullCode], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -1063,6 +1084,21 @@ function verifyToken(req, res, next) {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             });
+
+            return {
+                append(text) {
+                    fullCode += text;
+                    content.textContent = fullCode;
+                    scrollConversationToBottom();
+                },
+                setFilename(value) {
+                    const label = wrapper.querySelector('.stream-code-filename');
+                    if (label) label.textContent = value || filename || '';
+                },
+                remove() {
+                    wrapper.remove();
+                }
+            };
         }
 
         function scrollConversationToBottom() {
@@ -1070,6 +1106,72 @@ function verifyToken(req, res, next) {
                 top: workspaceConversation.scrollHeight,
                 behavior: 'smooth'
             });
+        }
+
+        async function parseStreamingResponse(response, onEvent) {
+            if (!response.body) {
+                throw new Error('Streaming is not supported by this browser.');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let sawDone = false;
+
+            const processBlock = (block) => {
+                const lines = block.split(/\r?\n/);
+                const dataLines = lines
+                    .filter((line) => line.startsWith('data:'))
+                    .map((line) => line.slice(5).trimStart());
+
+                if (!dataLines.length) return;
+
+                const rawData = dataLines.join('\n');
+
+                try {
+                    const payload = JSON.parse(rawData);
+                    if (payload.type === 'done') sawDone = true;
+                    onEvent(payload);
+                } catch (error) {
+                    console.error('SSE parse error:', error, rawData);
+                }
+            };
+
+            while (true) {
+                const { value, done } = await reader.read();
+
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                const blocks = buffer.split(/\r?\n\r?\n/);
+                buffer = blocks.pop() || '';
+
+                for (const block of blocks) {
+                    processBlock(block);
+                }
+            }
+
+            buffer += decoder.decode();
+
+            if (buffer.trim()) {
+                for (const block of buffer.split(/\r?\n\r?\n/)) {
+                    if (block.trim()) processBlock(block);
+                }
+            }
+
+            if (!sawDone) {
+                throw new Error('The AI stream ended before the response was complete. Please try again.');
+            }
+        }
+
+        async function readNonStreamingError(response, fallbackMessage) {
+            try {
+                const data = await response.json();
+                return data.error || fallbackMessage;
+            } catch {
+                return fallbackMessage;
+            }
         }
 
         async function handleCodeGeneration() {
@@ -1099,12 +1201,14 @@ function verifyToken(req, res, next) {
             askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
             clearWorkspaceBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            workspaceLoadingText.textContent = `Generating ${language} code with Gemini AI...`;
+            workspaceLoadingText.textContent = `Gemini is generating ${language} code...`;
             workspaceLoadingState.classList.remove('hidden');
             workspaceErrorAlert.classList.add('hidden');
 
             appendUserMessage(prompt);
             scrollConversationToBottom();
+
+            let streamingCode = null;
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
@@ -1115,18 +1219,39 @@ function verifyToken(req, res, next) {
                     body: JSON.stringify({ prompt, language })
                 });
 
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(data.error || 'Unable to generate code right now. Please try again.');
+                if (!response.ok) {
+                    const message = await readNonStreamingError(
+                        response,
+                        'Unable to generate code right now. Please try again.'
+                    );
+                    throw new Error(message);
                 }
 
-                appendCodeMessage(data.code, data.language, data.filename);
+                await parseStreamingResponse(response, (event) => {
+                    if (event.type === 'chunk') {
+                        if (!streamingCode) {
+                            streamingCode = appendStreamingCodeMessage(language, '');
+                            workspaceLoadingText.textContent = 'Receiving code from Gemini...';
+                        }
+                        streamingCode.append(event.text || '');
+                    } else if (event.type === 'done') {
+                        if (!streamingCode) {
+                            streamingCode = appendStreamingCodeMessage(
+                                event.language || language,
+                                event.filename || 'generated.code'
+                            );
+                        }
+                        streamingCode.setFilename(event.filename || 'generated.code');
+                    } else if (event.type === 'error') {
+                        throw new Error(event.error || 'Unable to generate code right now. Please try again.');
+                    }
+                });
+
                 workspacePrompt.value = '';
                 scrollConversationToBottom();
-
             } catch (error) {
                 console.error('Code generation error:', error);
+                if (streamingCode) streamingCode.remove();
                 workspaceErrorMessage.textContent = error.message || 'Unable to generate code right now. Please try again.';
                 workspaceErrorAlert.classList.remove('hidden');
             } finally {
@@ -1167,54 +1292,59 @@ function verifyToken(req, res, next) {
             generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
             clearWorkspaceBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            workspaceLoadingText.textContent = 'Thinking with Gemini AI...';
+            workspaceLoadingText.textContent = 'Gemini is preparing your answer...';
             workspaceLoadingState.classList.remove('hidden');
             workspaceErrorAlert.classList.add('hidden');
 
             appendUserMessage(prompt);
             scrollConversationToBottom();
 
+            let streamingAnswer = null;
+
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 50000);
+                const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt,
+                        answerLength
+                    })
+                });
 
-                let response;
-                try {
-                    response = await fetch(`${API_BASE_URL}/api/chat`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            prompt,
-                            answerLength
-                        }),
-                        signal: controller.signal
-                    });
-                } finally {
-                    clearTimeout(timeoutId);
+                if (!response.ok) {
+                    const message = await readNonStreamingError(
+                        response,
+                        'Unable to get an AI response right now. Please try again.'
+                    );
+                    throw new Error(message);
                 }
 
-                const data = await response.json();
+                await parseStreamingResponse(response, (event) => {
+                    if (event.type === 'chunk') {
+                        if (!streamingAnswer) {
+                            streamingAnswer = appendStreamingAiMessage();
+                            workspaceLoadingText.textContent = 'Receiving answer from Gemini...';
+                        }
+                        streamingAnswer.append(event.text || '');
+                    } else if (event.type === 'error') {
+                        throw new Error(event.error || 'Unable to get an AI response right now. Please try again.');
+                    }
+                });
 
-                if (!response.ok || !data.success) {
-                    throw new Error(data.error || 'Unable to get an AI response right now. Please try again.');
+                if (!streamingAnswer || !streamingAnswer.getText().trim()) {
+                    throw new Error('No answer was returned. Please try again.');
                 }
 
-                appendAiMessage(data.answer || 'No answer was returned.');
                 chatQuestionCount++;
                 workspacePrompt.value = '';
                 updateQuestionCount();
                 scrollConversationToBottom();
-
             } catch (error) {
                 console.error('Ask AI error:', error);
-
-                const message = error.name === 'AbortError'
-                    ? 'The AI is taking too long to respond. Please try again.'
-                    : (error.message || 'Unable to get an AI response right now. Please try again.');
-
-                workspaceErrorMessage.textContent = message;
+                if (streamingAnswer) streamingAnswer.remove();
+                workspaceErrorMessage.textContent = error.message || 'Unable to get an AI response right now. Please try again.';
                 workspaceErrorAlert.classList.remove('hidden');
             } finally {
                 isWorkspaceBusy = false;
@@ -1228,6 +1358,8 @@ function verifyToken(req, res, next) {
         }
 
         function resetWorkspace() {
+            if (isWorkspaceBusy) return;
+
             workspacePrompt.value = '';
             workspaceConversation.innerHTML = '';
             chatQuestionCount = 0;
@@ -1263,7 +1395,6 @@ function verifyToken(req, res, next) {
 
         updateQuestionCount();
 
-        // Existing code/result button IDs are intentionally unused now.
         // All code and AI results are rendered inside the unified workspace.
     </script>
 </body>
