@@ -241,27 +241,50 @@
         </div>
     </section>
 
-    <!-- Main Generator Section -->
+    <!-- Unified AI Workspace -->
     <section id="generator" class="py-24 relative bg-darker/50 border-t border-border/50">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center space-y-4 mb-12">
-                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">Interactive Code Generator</h2>
-                <p class="text-gray-400 max-w-xl mx-auto">Generate production-ready code instantly using Google Gemini AI. Select your language and submit your prompt.</p>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold uppercase tracking-wide">
+                    <i class="fa-solid fa-sparkles"></i>
+                    AI Workspace
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                    Code Generator + Ask AI
+                </h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">
+                    Use one prompt box. Generate code when you need source code, or ask AI when you want an explanation, debugging help, concepts, or interview guidance.
+                </p>
             </div>
 
             <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
-                <div class="space-y-2">
-                    <label for="prompt-input" class="block text-sm font-semibold text-gray-300">What do you want to build?</label>
-                    <div class="relative">
-                        <textarea id="prompt-input" rows="3" class="w-full bg-darker/80 border border-border rounded-2xl p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-sans text-sm transition-all resize-none" placeholder="What do you want to build?">Create a Python calculator with addition, subtraction, multiplication and division.</textarea>
+                <div class="space-y-3">
+                    <label for="workspace-prompt" class="block text-sm font-semibold text-gray-300">
+                        What do you want to do?
+                    </label>
+                    <textarea
+                        id="workspace-prompt"
+                        rows="5"
+                        maxlength="2000"
+                        class="w-full bg-darker/80 border border-border rounded-2xl p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-sans text-sm transition-all resize-none"
+                        placeholder="Example: Say hello world / Explain JavaScript promises / Fix this Python error..."
+                    ></textarea>
+                    <div class="flex items-center justify-between gap-3 text-xs text-gray-500">
+                        <span>Maximum 2000 characters</span>
+                        <span id="workspace-question-count">Questions: 0 / 10</span>
                     </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="w-full sm:w-auto flex-1">
-                        <label for="language-select" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Target Language</label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="language-select" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                            Code Language
+                        </label>
                         <div class="relative">
-                            <select id="language-select" class="w-full sm:w-64 bg-darker/80 border border-border rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer">
+                            <select
+                                id="language-select"
+                                class="w-full bg-darker/80 border border-border rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                            >
                                 <option value="Python" selected>Python</option>
                                 <option value="JavaScript">JavaScript</option>
                                 <option value="TypeScript">TypeScript</option>
@@ -280,146 +303,104 @@
                         </div>
                     </div>
 
-                    <div class="w-full sm:w-auto self-end">
-                        <button id="generate-btn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Code
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Error Alert Box -->
-                <div id="error-alert" class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
-                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                    <span id="error-message-text">Unable to generate code right now. Please try again.</span>
-                </div>
-
-                <!-- Loading State -->
-                <div id="loading-state" class="hidden py-12 text-center space-y-4">
-                    <div class="inline-block w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    <div class="text-sm font-medium text-gray-300 animate-pulse">Querying Google Gemini AI via Render backend...</div>
-                </div>
-
-                <!-- Code Result Container -->
-                <div id="code-result-container" class="hidden pt-4 space-y-4 animate-fadeIn">
-                    <div class="glass-panel rounded-2xl border border-border overflow-hidden">
-                        <div class="bg-darker/90 px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <span id="result-lang-badge" class="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs font-semibold">Python</span>
-                                <span id="result-filename" class="text-xs font-mono text-gray-400">calculator.py</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <button id="copy-btn" title="Copy Code" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5">
-                                    <i class="fa-regular fa-copy"></i> <span class="hidden sm:inline">Copy</span>
-                                </button>
-                                <button id="download-btn" title="Download File" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5">
-                                    <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Download</span>
-                                </button>
-                                <button id="regenerate-btn" title="Regenerate" class="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5">
-                                    <i class="fa-solid fa-rotate"></i> <span class="hidden sm:inline">Regenerate</span>
-                                </button>
+                    <div>
+                        <label for="answer-length-select" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                            AI Answer Length
+                        </label>
+                        <div class="relative">
+                            <select
+                                id="answer-length-select"
+                                class="w-full bg-darker/80 border border-border rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-purple-500 appearance-none cursor-pointer"
+                            >
+                                <option value="short">Short Answer</option>
+                                <option value="normal" selected>Normal Answer</option>
+                                <option value="long">Long Answer</option>
+                            </select>
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <div class="p-4 bg-darker/60 overflow-x-auto max-h-[400px]">
-                            <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed" id="code-output-text"><code>// Generated code will appear here...</code></pre>
-                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-<!-- Ask AI Assistant Section -->
-    <section id="ask-ai" class="py-16 relative bg-darker/50 border-t border-border/50">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
-
-                <div class="text-center space-y-2">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-wide">
-                        <i class="fa-solid fa-robot"></i> AI Assistant
-                    </div>
-
-                    <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                        Ask AI Assistant
-                    </h2>
-
-                    <p class="text-gray-400 text-sm sm:text-base max-w-xl mx-auto">
-                        Ask coding questions, explain errors, learn concepts, prepare for interviews, or understand code.
-                    </p>
-                </div>
-
-                <div class="space-y-3">
-                    <label for="chat-prompt-input" class="block text-sm font-semibold text-gray-300">
-                        What do you want to ask?
-                    </label>
-
-                    <textarea
-                        id="chat-prompt-input"
-                        rows="5"
-                        maxlength="2000"
-                        class="w-full bg-darker/80 border border-border rounded-2xl p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 font-sans text-sm transition-all resize-none"
-                        placeholder="Example: Explain JavaScript promises in simple words..."
-                    ></textarea>
-                    <div class="text-right text-xs text-gray-500">Maximum 2000 characters</div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <button
-                        id="ask-ai-btn"
+                        id="generate-btn"
                         type="button"
-                        class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 transition-all"
+                        class="w-full sm:w-auto flex-1 px-8 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 transition-all"
                     >
-                        <i class="fa-solid fa-paper-plane"></i>
-                        Ask AI
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        Generate Code
                     </button>
 
                     <button
-                        id="clear-chat-btn"
+                        id="ask-ai-btn"
                         type="button"
-                        class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-border text-gray-300 font-semibold text-sm transition-all"
+                        class="w-full sm:w-auto flex-1 px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 transition-all"
                     >
-                        <i class="fa-solid fa-eraser"></i>
-                        Clear
+                        <i class="fa-solid fa-robot"></i>
+                        Ask AI
                     </button>
                 </div>
 
-                <div id="chat-loading-state" class="hidden py-8 text-center space-y-3" aria-live="polite">
-                    <div class="inline-block w-9 h-9 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                    <div class="text-sm font-medium text-gray-300 animate-pulse">
+                <div
+                    id="workspace-loading-state"
+                    class="hidden py-8 text-center space-y-3"
+                    aria-live="polite"
+                >
+                    <div class="inline-block w-9 h-9 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div id="workspace-loading-text" class="text-sm font-medium text-gray-300 animate-pulse">
                         Thinking with Gemini AI...
                     </div>
                 </div>
 
-                <div id="chat-error-alert" class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3" role="alert">
+                <div
+                    id="workspace-error-alert"
+                    class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3"
+                    role="alert"
+                >
                     <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                    <span id="chat-error-message">
-                        Unable to get an AI response right now.
+                    <span id="workspace-error-message">
+                        Unable to complete the request right now. Please try again.
                     </span>
                 </div>
 
-                <div id="chat-result-container" class="hidden space-y-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="text-sm font-semibold text-gray-300">AI Answer</span>
+                <!-- One conversation area for both AI answers and generated code -->
+                <div id="workspace-conversation" class="space-y-4"></div>
 
-                        <button
-                            id="copy-answer-btn"
-                            type="button"
-                            class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5"
-                        >
-                            <i class="fa-regular fa-copy"></i>
-                            Copy Answer
-                        </button>
+                <div id="chat-limit-card" class="hidden p-5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-center space-y-3">
+                    <div class="text-sm font-semibold text-purple-300">
+                        You've reached the 10-question limit for this chat page.
                     </div>
-
-                    <div class="p-5 rounded-2xl bg-darker/70 border border-border overflow-x-auto">
-                        <div
-                            id="chat-answer-text"
-                            class="text-sm sm:text-base text-gray-200 leading-relaxed whitespace-pre-wrap"
-                        ></div>
-                    </div>
+                    <p class="text-xs text-gray-400">
+                        Please start a new chat to continue.
+                    </p>
+                    <button
+                        id="new-chat-btn"
+                        type="button"
+                        class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm transition-all"
+                    >
+                        <i class="fa-solid fa-plus"></i>
+                        Start New Chat
+                    </button>
                 </div>
 
+                <div class="flex justify-between items-center gap-3 pt-2">
+                    <span class="text-xs text-gray-500">
+                        Chat is temporary. Nothing is saved as chat history.
+                    </span>
+                    <button
+                        id="clear-workspace-btn"
+                        type="button"
+                        class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-border text-gray-400 hover:text-white text-xs transition-all"
+                    >
+                        <i class="fa-solid fa-eraser"></i> Clear
+                    </button>
+                </div>
             </div>
         </div>
     </section>
+
     <!-- Developer Experience Section -->
     <section class="py-24 relative border-t border-border/50 bg-dark">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -945,45 +926,191 @@ function verifyToken(req, res, next) {
         }
 
         // ==========================================
-        // 6. PRODUCTION RENDER API GENERATOR CLIENT
+        // 6. UNIFIED AI WORKSPACE
         // ==========================================
-        const generateBtn = document.getElementById('generate-btn');
-        const loadingState = document.getElementById('loading-state');
-        const codeResultContainer = document.getElementById('code-result-container');
-        const errorAlert = document.getElementById('error-alert');
-        const errorMessageText = document.getElementById('error-message-text');
+        const workspacePrompt = document.getElementById('workspace-prompt');
         const languageSelect = document.getElementById('language-select');
-        const resultLangBadge = document.getElementById('result-lang-badge');
-        const resultFilename = document.getElementById('result-filename');
-        const codeOutputText = document.getElementById('code-output-text');
-        const promptInput = document.getElementById('prompt-input');
+        const answerLengthSelect = document.getElementById('answer-length-select');
+        const generateBtn = document.getElementById('generate-btn');
+        const askAiBtn = document.getElementById('ask-ai-btn');
+        const workspaceLoadingState = document.getElementById('workspace-loading-state');
+        const workspaceLoadingText = document.getElementById('workspace-loading-text');
+        const workspaceErrorAlert = document.getElementById('workspace-error-alert');
+        const workspaceErrorMessage = document.getElementById('workspace-error-message');
+        const workspaceConversation = document.getElementById('workspace-conversation');
+        const workspaceQuestionCount = document.getElementById('workspace-question-count');
+        const chatLimitCard = document.getElementById('chat-limit-card');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const clearWorkspaceBtn = document.getElementById('clear-workspace-btn');
 
-        let isGenerating = false;
+        let isWorkspaceBusy = false;
+        let chatQuestionCount = 0;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function updateQuestionCount() {
+            workspaceQuestionCount.textContent = `Questions: ${chatQuestionCount} / 10`;
+
+            if (chatQuestionCount >= 10) {
+                askAiBtn.disabled = true;
+                askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                chatLimitCard.classList.remove('hidden');
+            } else {
+                askAiBtn.disabled = false;
+                askAiBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                chatLimitCard.classList.add('hidden');
+            }
+        }
+
+        function appendUserMessage(prompt) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex justify-end';
+            wrapper.innerHTML = `
+                <div class="max-w-[90%] rounded-2xl rounded-br-md bg-blue-600/15 border border-blue-500/20 px-4 py-3">
+                    <div class="text-[11px] uppercase tracking-wider text-blue-400 font-semibold mb-1">You</div>
+                    <div class="text-sm text-gray-200 whitespace-pre-wrap break-words">${escapeHtml(prompt)}</div>
+                </div>
+            `;
+            workspaceConversation.appendChild(wrapper);
+        }
+
+        function appendAiMessage(answer) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex justify-start';
+            wrapper.innerHTML = `
+                <div class="max-w-[95%] w-full rounded-2xl rounded-bl-md bg-white/[0.03] border border-border px-4 py-4">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <div class="text-[11px] uppercase tracking-wider text-purple-400 font-semibold">AI</div>
+                        <button type="button" class="copy-chat-answer px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] transition-all">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="chat-answer-content text-sm sm:text-base text-gray-200 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(answer)}</div>
+                </div>
+            `;
+            workspaceConversation.appendChild(wrapper);
+
+            const copyButton = wrapper.querySelector('.copy-chat-answer');
+            copyButton.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(answer);
+                    copyButton.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+                    setTimeout(() => {
+                        copyButton.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                    }, 2000);
+                } catch (error) {
+                    console.error('Copy chat answer error:', error);
+                }
+            });
+        }
+
+        function appendCodeMessage(code, language, filename) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex justify-start';
+            wrapper.innerHTML = `
+                <div class="max-w-[95%] w-full rounded-2xl bg-white/[0.03] border border-border overflow-hidden">
+                    <div class="bg-darker/90 px-4 py-3 border-b border-border flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-xs font-semibold">${escapeHtml(language)}</span>
+                            <span class="text-xs font-mono text-gray-400">${escapeHtml(filename)}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="copy-generated-code p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors">
+                                <i class="fa-regular fa-copy"></i> Copy
+                            </button>
+                            <button type="button" class="download-generated-code p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors">
+                                <i class="fa-solid fa-download"></i> Download
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-darker/60 overflow-x-auto max-h-[420px]">
+                        <pre class="font-mono text-xs sm:text-sm text-gray-200 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(code)}</pre>
+                    </div>
+                </div>
+            `;
+            workspaceConversation.appendChild(wrapper);
+
+            const copyButton = wrapper.querySelector('.copy-generated-code');
+            const downloadButton = wrapper.querySelector('.download-generated-code');
+
+            copyButton.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(code);
+                    copyButton.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+                    setTimeout(() => {
+                        copyButton.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                    }, 2000);
+                } catch (error) {
+                    console.error('Copy generated code error:', error);
+                }
+            });
+
+            downloadButton.addEventListener('click', () => {
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename || 'generated.code';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        function scrollConversationToBottom() {
+            workspaceConversation.scrollTo({
+                top: workspaceConversation.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
 
         async function handleCodeGeneration() {
-            if (isGenerating) return;
+            if (isWorkspaceBusy) return;
 
-            const prompt = promptInput.value.trim();
+            const prompt = workspacePrompt.value.trim();
             const language = languageSelect.value;
 
             if (!prompt) {
-                errorMessageText.textContent = "Please enter what you want to build.";
-                errorAlert.classList.remove('hidden');
+                workspaceErrorMessage.textContent = 'Please enter what you want to build.';
+                workspaceErrorAlert.classList.remove('hidden');
                 return;
             }
 
-            isGenerating = true;
+            if (prompt.length > 2000) {
+                workspaceErrorMessage.textContent = 'Your prompt is too long. Maximum length is 2000 characters.';
+                workspaceErrorAlert.classList.remove('hidden');
+                return;
+            }
+
+            isWorkspaceBusy = true;
             generateBtn.disabled = true;
+            askAiBtn.disabled = true;
+            clearWorkspaceBtn.disabled = true;
+
             generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            loadingState.classList.remove('hidden');
-            codeResultContainer.classList.add('hidden');
-            errorAlert.classList.add('hidden');
+            askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            clearWorkspaceBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            workspaceLoadingText.textContent = `Generating ${language} code with Gemini AI...`;
+            workspaceLoadingState.classList.remove('hidden');
+            workspaceErrorAlert.classList.add('hidden');
+
+            appendUserMessage(prompt);
+            scrollConversationToBottom();
 
             try {
                 const response = await fetch(`${API_BASE_URL}/api/generate`, {
-                    method: "POST",
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "application/json"
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ prompt, language })
                 });
@@ -991,175 +1118,142 @@ function verifyToken(req, res, next) {
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    throw new Error(data.error || "Unable to generate code right now. Please try again.");
+                    throw new Error(data.error || 'Unable to generate code right now. Please try again.');
                 }
 
-                // Success rendering flow using real backend properties
-                resultLangBadge.textContent = data.language;
-                resultFilename.textContent = data.filename;
-                codeOutputText.textContent = data.code;
+                appendCodeMessage(data.code, data.language, data.filename);
+                workspacePrompt.value = '';
+                scrollConversationToBottom();
 
-                loadingState.classList.add('hidden');
-                codeResultContainer.classList.remove('hidden');
-                codeResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-            } catch (err) {
-                console.error("Code generation error:", err);
-                errorMessageText.textContent = err.message || "Unable to generate code right now. Please try again.";
-                loadingState.classList.add('hidden');
-                errorAlert.classList.remove('hidden');
+            } catch (error) {
+                console.error('Code generation error:', error);
+                workspaceErrorMessage.textContent = error.message || 'Unable to generate code right now. Please try again.';
+                workspaceErrorAlert.classList.remove('hidden');
             } finally {
-                isGenerating = false;
+                isWorkspaceBusy = false;
+                workspaceLoadingState.classList.add('hidden');
                 generateBtn.disabled = false;
+                clearWorkspaceBtn.disabled = false;
                 generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                clearWorkspaceBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                updateQuestionCount();
             }
         }
 
-        if(generateBtn) {
+        async function handleAskAI() {
+            if (isWorkspaceBusy || chatQuestionCount >= 10) return;
+
+            const prompt = workspacePrompt.value.trim();
+            const answerLength = answerLengthSelect.value;
+
+            if (!prompt) {
+                workspaceErrorMessage.textContent = 'Please enter a question for AI.';
+                workspaceErrorAlert.classList.remove('hidden');
+                return;
+            }
+
+            if (prompt.length > 2000) {
+                workspaceErrorMessage.textContent = 'Your question is too long. Maximum length is 2000 characters.';
+                workspaceErrorAlert.classList.remove('hidden');
+                return;
+            }
+
+            isWorkspaceBusy = true;
+            askAiBtn.disabled = true;
+            generateBtn.disabled = true;
+            clearWorkspaceBtn.disabled = true;
+
+            askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            clearWorkspaceBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            workspaceLoadingText.textContent = 'Thinking with Gemini AI...';
+            workspaceLoadingState.classList.remove('hidden');
+            workspaceErrorAlert.classList.add('hidden');
+
+            appendUserMessage(prompt);
+            scrollConversationToBottom();
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 50000);
+
+                let response;
+                try {
+                    response = await fetch(`${API_BASE_URL}/api/chat`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt,
+                            answerLength
+                        }),
+                        signal: controller.signal
+                    });
+                } finally {
+                    clearTimeout(timeoutId);
+                }
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Unable to get an AI response right now. Please try again.');
+                }
+
+                appendAiMessage(data.answer || 'No answer was returned.');
+                chatQuestionCount++;
+                workspacePrompt.value = '';
+                updateQuestionCount();
+                scrollConversationToBottom();
+
+            } catch (error) {
+                console.error('Ask AI error:', error);
+
+                const message = error.name === 'AbortError'
+                    ? 'The AI is taking too long to respond. Please try again.'
+                    : (error.message || 'Unable to get an AI response right now. Please try again.');
+
+                workspaceErrorMessage.textContent = message;
+                workspaceErrorAlert.classList.remove('hidden');
+            } finally {
+                isWorkspaceBusy = false;
+                workspaceLoadingState.classList.add('hidden');
+                generateBtn.disabled = false;
+                clearWorkspaceBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                clearWorkspaceBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                updateQuestionCount();
+            }
+        }
+
+        function resetWorkspace() {
+            workspacePrompt.value = '';
+            workspaceConversation.innerHTML = '';
+            chatQuestionCount = 0;
+            workspaceErrorAlert.classList.add('hidden');
+            workspaceLoadingState.classList.add('hidden');
+            updateQuestionCount();
+        }
+
+        if (generateBtn) {
             generateBtn.addEventListener('click', handleCodeGeneration);
         }
-// ==========================================
-// 7. ASK AI ASSISTANT CLIENT INTEGRATION
-// ==========================================
-const chatPromptInput = document.getElementById('chat-prompt-input');
-const askAiBtn = document.getElementById('ask-ai-btn');
-const clearChatBtn = document.getElementById('clear-chat-btn');
 
-const chatLoadingState = document.getElementById('chat-loading-state');
-const chatErrorAlert = document.getElementById('chat-error-alert');
-const chatErrorMessage = document.getElementById('chat-error-message');
-const chatResultContainer = document.getElementById('chat-result-container');
-const chatAnswerText = document.getElementById('chat-answer-text');
-const copyAnswerBtn = document.getElementById('copy-answer-btn');
-
-let isAskingAI = false;
-
-async function handleAskAI() {
-    if (isAskingAI) return;
-
-    const prompt = chatPromptInput.value.trim();
-
-    if (!prompt) {
-        chatErrorMessage.textContent = "Please enter a question.";
-        chatErrorAlert.classList.remove('hidden');
-        return;
-    }
-
-    if (prompt.length > 2000) {
-        chatErrorMessage.textContent = "Your question is too long. Maximum length is 2000 characters.";
-        chatErrorAlert.classList.remove('hidden');
-        return;
-    }
-
-    isAskingAI = true;
-    askAiBtn.disabled = true;
-    clearChatBtn.disabled = true;
-    askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    clearChatBtn.classList.add('opacity-50', 'cursor-not-allowed');
-
-    chatLoadingState.classList.remove('hidden');
-    chatResultContainer.classList.add('hidden');
-    chatErrorAlert.classList.add('hidden');
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 50000);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/chat`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ prompt }),
-            signal: controller.signal
-        });
-
-        let data = null;
-
-        try {
-            data = await response.json();
-        } catch (jsonError) {
-            throw new Error("The server returned an invalid response. Please try again.");
+        if (askAiBtn) {
+            askAiBtn.addEventListener('click', handleAskAI);
         }
 
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.error || "Unable to get an AI response right now. Please try again."
-            );
+        if (newChatBtn) {
+            newChatBtn.addEventListener('click', resetWorkspace);
         }
 
-        chatAnswerText.textContent = data.answer || "No answer was returned.";
-
-        chatLoadingState.classList.add('hidden');
-        chatResultContainer.classList.remove('hidden');
-
-        chatResultContainer.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest'
-        });
-
-    } catch (err) {
-        console.error("Ask AI error:", err);
-
-        chatLoadingState.classList.add('hidden');
-
-        if (err.name === "AbortError") {
-            chatErrorMessage.textContent = "The AI is taking too long to respond. Please try again.";
-        } else {
-            chatErrorMessage.textContent =
-                err.message || "Unable to get an AI response right now. Please try again.";
+        if (clearWorkspaceBtn) {
+            clearWorkspaceBtn.addEventListener('click', resetWorkspace);
         }
 
-        chatErrorAlert.classList.remove('hidden');
-    } finally {
-        clearTimeout(timeoutId);
-        isAskingAI = false;
-        askAiBtn.disabled = false;
-        clearChatBtn.disabled = false;
-        askAiBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        clearChatBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-}
-
-if (askAiBtn) {
-    askAiBtn.addEventListener('click', handleAskAI);
-}
-
-if (clearChatBtn) {
-    clearChatBtn.addEventListener('click', () => {
-        chatPromptInput.value = "";
-        chatAnswerText.textContent = "";
-
-        chatResultContainer.classList.add('hidden');
-        chatErrorAlert.classList.add('hidden');
-        chatLoadingState.classList.add('hidden');
-    });
-}
-
-if (copyAnswerBtn) {
-    copyAnswerBtn.addEventListener('click', async () => {
-        const answer = chatAnswerText.textContent;
-
-        if (!answer) return;
-
-        try {
-            await navigator.clipboard.writeText(answer);
-
-            copyAnswerBtn.innerHTML =
-                '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
-
-            setTimeout(() => {
-                copyAnswerBtn.innerHTML =
-                    '<i class="fa-regular fa-copy"></i> Copy Answer';
-            }, 2000);
-
-        } catch (error) {
-            console.error("Copy answer error:", error);
-        }
-    });
-}
-        if (chatPromptInput) {
-            chatPromptInput.addEventListener('keydown', (event) => {
+        if (workspacePrompt) {
+            workspacePrompt.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
                     event.preventDefault();
                     handleAskAI();
@@ -1167,39 +1261,10 @@ if (copyAnswerBtn) {
             });
         }
 
-        // Action buttons inside code result card
-        const copyBtn = document.getElementById('copy-btn');
-        if(copyBtn) {
-            copyBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(codeOutputText.textContent);
-                copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
-                setTimeout(() => {
-                    copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
-                }, 2000);
-            });
-        }
+        updateQuestionCount();
 
-        const downloadBtn = document.getElementById('download-btn');
-        if(downloadBtn) {
-            downloadBtn.addEventListener('click', () => {
-                const blob = new Blob([codeOutputText.textContent], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = resultFilename.textContent;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            });
-        }
-
-        const regenerateBtn = document.getElementById('regenerate-btn');
-        if(regenerateBtn) {
-            regenerateBtn.addEventListener('click', () => {
-                handleCodeGeneration();
-            });
-        }
+        // Existing code/result button IDs are intentionally unused now.
+        // All code and AI results are rendered inside the unified workspace.
     </script>
 </body>
 </html>
