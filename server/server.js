@@ -6,10 +6,8 @@ import { rateLimit } from "express-rate-limit";
 import crypto from "crypto";
 import { GoogleGenAI } from "@google/genai";
 
-// Load environment variables from .env file
 dotenv.config();
 
-// Verify server-side Gemini API key configuration
 if (!process.env.GEMINI_API_KEY) {
   console.error(
     "CRITICAL CONFIGURATION ERROR: GEMINI_API_KEY is missing from environment variables."
@@ -17,44 +15,39 @@ if (!process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 
-// Initialize official Google GenAI SDK client
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
 
 const MODEL_NAME = "gemini-3.5-flash-lite";
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 const FRONTEND_ORIGIN =
   process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
-// Trust the first proxy hop for accurate client IP detection behind Render
 app.set("trust proxy", 1);
 
 // ==========================================
-// PRIVACY-SAFE IN-MEMORY AGGREGATE METRICS
+// METRICS
 // ==========================================
+
 const metricsData = {
   serverStartedAt: Date.now(),
 
-  // Code generation metrics
   totalGenerationRequests: 0,
   successfulGenerations: 0,
   validationFailures: 0,
   rateLimitedRequests: 0,
-  timeoutRequests: 0,
   upstreamGenerationErrors: 0,
+  timeoutRequests: 0,
 
-  // Ask AI chat metrics
   totalChatRequests: 0,
   successfulChats: 0,
   chatValidationFailures: 0,
   chatRateLimitedRequests: 0,
-  chatTimeoutRequests: 0,
   chatUpstreamErrors: 0,
+  chatTimeoutRequests: 0,
 
-  // Generation counts by language
   generationsByLanguage: {
     Python: 0,
     JavaScript: 0,
@@ -71,21 +64,18 @@ const metricsData = {
 };
 
 // ==========================================
-// ADMIN TOKEN VERIFICATION
+// ADMIN TOKEN
 // ==========================================
+
 function verifyAdminToken(req, res, next) {
   const adminToken = process.env.METRICS_ADMIN_TOKEN;
-
-  if (!adminToken) {
-    return res.status(401).json({
-      success: false,
-      error: "Unauthorized."
-    });
-  }
-
   const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (
+    !adminToken ||
+    !authHeader ||
+    !authHeader.startsWith("Bearer ")
+  ) {
     return res.status(401).json({
       success: false,
       error: "Unauthorized."
@@ -96,18 +86,18 @@ function verifyAdminToken(req, res, next) {
 
   try {
     const tokenBuffer = Buffer.from(token);
-    const adminTokenBuffer = Buffer.from(adminToken);
+    const adminBuffer = Buffer.from(adminToken);
 
     if (
-      tokenBuffer.length !== adminTokenBuffer.length ||
-      !crypto.timingSafeEqual(tokenBuffer, adminTokenBuffer)
+      tokenBuffer.length !== adminBuffer.length ||
+      !crypto.timingSafeEqual(tokenBuffer, adminBuffer)
     ) {
       return res.status(401).json({
         success: false,
         error: "Unauthorized."
       });
     }
-  } catch (error) {
+  } catch {
     return res.status(401).json({
       success: false,
       error: "Unauthorized."
@@ -120,38 +110,40 @@ function verifyAdminToken(req, res, next) {
 // ==========================================
 // CORS
 // ==========================================
+
 const allowedOrigins = FRONTEND_ORIGIN
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no Origin header, such as curl/server-to-server
-    if (!origin) {
-      return callback(null, true);
-    }
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
+      return callback(new Error("Not allowed by CORS policy"));
     }
-
-    return callback(new Error("Not allowed by CORS policy"));
-  }
-};
+  })
+);
 
 // ==========================================
-// SECURITY MIDDLEWARE
+// SECURITY
 // ==========================================
+
 app.use(helmet());
 
-app.use(cors(corsOptions));
-
-app.use(express.json({ limit: "32kb" }));
+app.use(
+  express.json({
+    limit: "32kb"
+  })
+);
 
 // ==========================================
-// BODY PARSER ERROR HANDLING
+// BODY PARSER ERRORS
 // ==========================================
+
 app.use((err, req, res, next) => {
   if (
     err instanceof SyntaxError &&
@@ -165,12 +157,13 @@ app.use((err, req, res, next) => {
   }
 
   if (
-    err &&
-    (err.type === "entity.too.large" || err.status === 413)
+    err?.type === "entity.too.large" ||
+    err?.status === 413
   ) {
     return res.status(413).json({
       success: false,
-      error: "Request body too large. Maximum allowed size is 32kb."
+      error:
+        "Request body too large. Maximum allowed size is 32kb."
     });
   }
 
@@ -178,8 +171,87 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// SUPPORTED PROGRAMMING LANGUAGES
+// STREAMING HELPERS
 // ==========================================
+
+function startSSE(res) {
+  res.status(200);
+
+  res.setHeader(
+    "Content-Type",
+    "text/event-stream; charset=utf-8"
+  );
+
+  res.setHeader(
+    "Cache-Control",
+    "no-cache, no-transform"
+  );
+
+  res.setHeader(
+    "Connection",
+    "keep-alive"
+  );
+
+  res.setHeader(
+    "X-Accel-Buffering",
+    "no"
+  );
+
+  res.flushHeaders?.();
+}
+
+function sendSSE(res, payload) {
+  if (res.writableEnded || res.destroyed) {
+    return;
+  }
+
+  res.write(
+    `data: ${JSON.stringify(payload)}\n\n`
+  );
+}
+
+function startKeepAlive(res) {
+  return setInterval(() => {
+    if (!res.writableEnded && !res.destroyed) {
+      res.write(": keepalive\n\n");
+    }
+  }, 15000);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function cleanGeneratedCode(code) {
+  let value = String(code || "").trim();
+
+  if (value.startsWith("```")) {
+    const newlineIndex =
+      value.indexOf("\n");
+
+    if (newlineIndex !== -1) {
+      value = value.substring(
+        newlineIndex + 1
+      );
+    }
+
+    if (value.endsWith("```")) {
+      value = value.substring(
+        0,
+        value.length - 3
+      );
+    }
+  }
+
+  return value.trim();
+}
+
+// ==========================================
+// LANGUAGES
+// ==========================================
+
 const SUPPORTED_LANGUAGES = [
   "Python",
   "JavaScript",
@@ -194,9 +266,6 @@ const SUPPORTED_LANGUAGES = [
   "SQL"
 ];
 
-// ==========================================
-// GENERATED FILE NAMES
-// ==========================================
 const FILE_NAMES = {
   Python: "generated.py",
   JavaScript: "generated.js",
@@ -212,8 +281,9 @@ const FILE_NAMES = {
 };
 
 // ==========================================
-// ASK AI SYSTEM INSTRUCTION
+// ASK AI INSTRUCTION
 // ==========================================
+
 const ASK_AI_SYSTEM_INSTRUCTION = `
 You are a friendly AI coding and learning assistant.
 
@@ -229,9 +299,6 @@ Do not invent facts.
 Return a helpful natural-language answer.
 `.trim();
 
-// ==========================================
-// SUPPORTED AI ANSWER LENGTHS
-// ==========================================
 const SUPPORTED_ANSWER_LENGTHS = [
   "short",
   "normal",
@@ -239,8 +306,9 @@ const SUPPORTED_ANSWER_LENGTHS = [
 ];
 
 // ==========================================
-// GENERATE CODE RATE LIMITER
+// RATE LIMITERS
 // ==========================================
+
 const generateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -252,14 +320,12 @@ const generateLimiter = rateLimit({
 
     return res.status(429).json({
       success: false,
-      error: "Too many generation requests. Please try again later."
+      error:
+        "Too many generation requests. Please try again later."
     });
   }
 });
 
-// ==========================================
-// ASK AI RATE LIMITER
-// ==========================================
 const chatLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -272,249 +338,16 @@ const chatLimiter = rateLimit({
 
     return res.status(429).json({
       success: false,
-      error: "Too many chat requests. Please try again later."
+      error:
+        "Too many chat requests. Please try again later."
     });
   }
 });
 
 // ==========================================
-// ASK AI ENDPOINT
-// POST /api/chat
+// HEALTH
 // ==========================================
-app.post("/api/chat", chatLimiter, async (req, res, next) => {
-  metricsData.totalChatRequests++;
 
-  try {
-    // --------------------------------------
-    // 1. Content-Type validation
-    // --------------------------------------
-    const contentType = req.headers["content-type"];
-
-    if (
-      !contentType ||
-      !contentType.toLowerCase().includes("application/json")
-    ) {
-      metricsData.chatValidationFailures++;
-
-      return res.status(415).json({
-        success: false,
-        error: "Content-Type must be application/json."
-      });
-    }
-
-    // --------------------------------------
-    // 2. Validate request body
-    // --------------------------------------
-    if (
-      !req.body ||
-      typeof req.body !== "object" ||
-      Array.isArray(req.body)
-    ) {
-      metricsData.chatValidationFailures++;
-
-      return res.status(400).json({
-        success: false,
-        error: "Request body must be a JSON object."
-      });
-    }
-
-    // --------------------------------------
-    // 3. Strict request shape
-    // --------------------------------------
-    const bodyKeys = Object.keys(req.body);
-    const allowedKeys = ["prompt", "answerLength"];
-
-    const hasInvalidKeys = bodyKeys.some(
-      (key) => !allowedKeys.includes(key)
-    );
-
-    if (hasInvalidKeys) {
-      metricsData.chatValidationFailures++;
-
-      return res.status(400).json({
-        success: false,
-        error:
-          "Only 'prompt' and 'answerLength' are allowed in the request body."
-      });
-    }
-
-    // --------------------------------------
-    // 4. Validate prompt
-    // --------------------------------------
-    if (typeof req.body.prompt !== "string") {
-      metricsData.chatValidationFailures++;
-
-      return res.status(400).json({
-        success: false,
-        error: "Prompt must be a string."
-      });
-    }
-
-    const trimmedPrompt = req.body.prompt.trim();
-
-    if (!trimmedPrompt) {
-      metricsData.chatValidationFailures++;
-
-      return res.status(400).json({
-        success: false,
-        error: "Prompt cannot be empty."
-      });
-    }
-
-    // --------------------------------------
-    // 5. Prompt length limit
-    // --------------------------------------
-    if (trimmedPrompt.length > 2000) {
-      metricsData.chatValidationFailures++;
-
-      return res.status(413).json({
-        success: false,
-        error:
-          "Prompt is too long. Maximum length is 2000 characters."
-      });
-    }
-
-    // --------------------------------------
-    // 6. Validate answer length
-    // --------------------------------------
-    const answerLength =
-      req.body.answerLength === undefined
-        ? "normal"
-        : req.body.answerLength;
-
-    if (
-      typeof answerLength !== "string" ||
-      !SUPPORTED_ANSWER_LENGTHS.includes(answerLength)
-    ) {
-      metricsData.chatValidationFailures++;
-
-      return res.status(400).json({
-        success: false,
-        error:
-          "Unsupported answer length. Use short, normal, or long."
-      });
-    }
-
-    // --------------------------------------
-    // Answer length instruction
-    // --------------------------------------
-    const answerLengthInstruction = {
-      short:
-        "Keep the answer concise and focused. Prefer a few short paragraphs or bullets and small examples when useful.",
-
-      normal:
-        "Give a balanced explanation with enough detail for understanding without unnecessary length.",
-
-      long:
-        "Give a detailed explanation with clear steps, examples, and useful context. Avoid unnecessary repetition."
-    }[answerLength];
-
-    const chatSystemInstruction =
-      `${ASK_AI_SYSTEM_INSTRUCTION}\n\n` +
-      `Answer style:\n${answerLengthInstruction}`;
-
-    // --------------------------------------
-    // 7. Timeout guard
-    // --------------------------------------
-    const controller = new AbortController();
-
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-    }, 45000);
-
-    try {
-      let response;
-
-      // --------------------------------------
-      // 8. Retry temporary 503 / unavailable
-      // --------------------------------------
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        try {
-          response = await ai.models.generateContent({
-            model: MODEL_NAME,
-            contents: trimmedPrompt,
-            config: {
-              systemInstruction: chatSystemInstruction,
-              abortSignal: controller.signal
-            }
-          });
-
-          break;
-        } catch (error) {
-          const status =
-            error?.status ??
-            error?.code ??
-            error?.response?.status;
-
-          const isUnavailable =
-            status === 503 ||
-            String(error?.message || "")
-              .toLowerCase()
-              .includes("unavailable");
-
-          if (!isUnavailable || attempt === 3) {
-            throw error;
-          }
-
-          await new Promise((resolve) =>
-            setTimeout(resolve, attempt * 1500)
-          );
-        }
-      }
-
-      // --------------------------------------
-      // 9. Extract answer
-      // --------------------------------------
-      const answer = response?.text?.trim();
-
-      if (!answer) {
-        metricsData.chatUpstreamErrors++;
-
-        return res.status(502).json({
-          success: false,
-          error:
-            "AI returned an empty response. Please try again."
-        });
-      }
-
-      // --------------------------------------
-      // 10. Success
-      // --------------------------------------
-      metricsData.successfulChats++;
-
-      return res.status(200).json({
-        success: true,
-        answer,
-        answerLength
-      });
-    } catch (error) {
-      // --------------------------------------
-      // Timeout
-      // --------------------------------------
-      if (error?.name === "AbortError") {
-        metricsData.chatTimeoutRequests++;
-
-        return res.status(504).json({
-          success: false,
-          error: "AI request timed out. Please try again."
-        });
-      }
-
-      metricsData.chatUpstreamErrors++;
-
-      return next(error);
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// ==========================================
-// HEALTH CHECK
-// GET /api/health
-// ==========================================
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -524,23 +357,24 @@ app.get("/api/health", (req, res) => {
 
 // ==========================================
 // ADMIN METRICS
-// GET /api/admin/metrics
 // ==========================================
+
 app.get(
   "/api/admin/metrics",
   verifyAdminToken,
   (req, res) => {
     const uptimeSeconds = Math.floor(
-      (Date.now() - metricsData.serverStartedAt) / 1000
+      (Date.now() -
+        metricsData.serverStartedAt) /
+        1000
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
 
       metrics: {
         uptimeSeconds,
 
-        // Code generation
         totalGenerationRequests:
           metricsData.totalGenerationRequests,
 
@@ -559,7 +393,6 @@ app.get(
         upstreamGenerationErrors:
           metricsData.upstreamGenerationErrors,
 
-        // Ask AI
         totalChatRequests:
           metricsData.totalChatRequests,
 
@@ -578,7 +411,6 @@ app.get(
         chatUpstreamErrors:
           metricsData.chatUpstreamErrors,
 
-        // Language counts
         generationsByLanguage: {
           ...metricsData.generationsByLanguage
         }
@@ -588,9 +420,292 @@ app.get(
 );
 
 // ==========================================
-// GENERATE CODE ENDPOINT
-// POST /api/generate
+// ASK AI - STREAMING
 // ==========================================
+
+app.post(
+  "/api/chat",
+  chatLimiter,
+  async (req, res, next) => {
+    metricsData.totalChatRequests++;
+
+    try {
+      const contentType =
+        req.headers["content-type"];
+
+      if (
+        !contentType ||
+        !contentType
+          .toLowerCase()
+          .includes("application/json")
+      ) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(415).json({
+          success: false,
+          error:
+            "Content-Type must be application/json."
+        });
+      }
+
+      if (
+        !req.body ||
+        typeof req.body !== "object" ||
+        Array.isArray(req.body)
+      ) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Request body must be a JSON object."
+        });
+      }
+
+      const keys = Object.keys(req.body);
+
+      if (
+        keys.some(
+          (key) =>
+            !["prompt", "answerLength"].includes(key)
+        )
+      ) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Only 'prompt' and 'answerLength' are allowed in the request body."
+        });
+      }
+
+      if (
+        typeof req.body.prompt !== "string"
+      ) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Prompt must be a string."
+        });
+      }
+
+      const prompt =
+        req.body.prompt.trim();
+
+      if (!prompt) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Prompt cannot be empty."
+        });
+      }
+
+      if (prompt.length > 2000) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(413).json({
+          success: false,
+          error:
+            "Prompt is too long. Maximum length is 2000 characters."
+        });
+      }
+
+      const answerLength =
+        req.body.answerLength === undefined
+          ? "normal"
+          : req.body.answerLength;
+
+      if (
+        typeof answerLength !== "string" ||
+        !SUPPORTED_ANSWER_LENGTHS.includes(
+          answerLength
+        )
+      ) {
+        metricsData.chatValidationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Unsupported answer length. Use short, normal, or long."
+        });
+      }
+
+      const lengthInstruction = {
+        short:
+          "Keep the answer concise and focused. Prefer a few short paragraphs or bullets and small examples when useful.",
+
+        normal:
+          "Give a balanced explanation with enough detail for understanding without unnecessary length.",
+
+        long:
+          "Give a detailed explanation with clear steps, examples, and useful context. Avoid unnecessary repetition."
+      }[answerLength];
+
+      startSSE(res);
+
+      const keepAlive =
+        startKeepAlive(res);
+
+      let disconnected = false;
+
+      req.on("close", () => {
+        disconnected = true;
+      });
+
+      try {
+        let fullAnswer = "";
+        let completed = false;
+        let attempts = 0;
+
+        while (
+          !completed &&
+          attempts < 3 &&
+          !disconnected
+        ) {
+          attempts++;
+
+          try {
+            const stream =
+              await ai.models.generateContentStream(
+                {
+                  model: MODEL_NAME,
+
+                  contents: prompt,
+
+                  config: {
+                    systemInstruction:
+                      `${ASK_AI_SYSTEM_INSTRUCTION}\n\nAnswer style:\n${lengthInstruction}`
+                  }
+                }
+              );
+
+            for await (const chunk of stream) {
+              if (disconnected) {
+                break;
+              }
+
+              const text =
+                typeof chunk?.text === "string"
+                  ? chunk.text
+                  : "";
+
+              if (!text) {
+                continue;
+              }
+
+              fullAnswer += text;
+
+              sendSSE(res, {
+                type: "chunk",
+                text
+              });
+            }
+
+            completed = !disconnected;
+          } catch (error) {
+            const status =
+              error?.status ??
+              error?.code ??
+              error?.response?.status;
+
+            const message =
+              String(
+                error?.message || ""
+              ).toLowerCase();
+
+            const unavailable =
+              status === 503 ||
+              message.includes("503") ||
+              message.includes(
+                "unavailable"
+              ) ||
+              message.includes(
+                "service unavailable"
+              );
+
+            if (
+              unavailable &&
+              !fullAnswer &&
+              attempts < 3 &&
+              !disconnected
+            ) {
+              await sleep(
+                attempts === 1
+                  ? 1500
+                  : 3000
+              );
+
+              continue;
+            }
+
+            throw error;
+          }
+        }
+
+        if (disconnected) {
+          return;
+        }
+
+        if (
+          !completed ||
+          !fullAnswer.trim()
+        ) {
+          metricsData.chatUpstreamErrors++;
+
+          sendSSE(res, {
+            type: "error",
+            error:
+              "AI returned an empty response. Please try again."
+          });
+
+          return;
+        }
+
+        metricsData.successfulChats++;
+
+        sendSSE(res, {
+          type: "done",
+          answerLength
+        });
+      } catch (error) {
+        metricsData.chatUpstreamErrors++;
+
+        if (!disconnected) {
+          sendSSE(res, {
+            type: "error",
+            error:
+              "Unable to get an AI response right now. Please try again."
+          });
+
+          console.error(
+            "Gemini Chat Streaming Error:",
+            error?.message || error
+          );
+        }
+      } finally {
+        clearInterval(keepAlive);
+
+        if (
+          !res.writableEnded &&
+          !disconnected
+        ) {
+          res.end();
+        }
+      }
+    } catch (error) {
+      return next(error);
+    }
+  }
+);
+
+// ==========================================
+// GENERATE CODE - STREAMING
+// ==========================================
+
 app.post(
   "/api/generate",
   generateLimiter,
@@ -598,26 +713,24 @@ app.post(
     metricsData.totalGenerationRequests++;
 
     try {
-      // --------------------------------------
-      // 1. Content-Type validation
-      // --------------------------------------
-      const contentType = req.headers["content-type"];
+      const contentType =
+        req.headers["content-type"];
 
       if (
         !contentType ||
-        !contentType.toLowerCase().includes("application/json")
+        !contentType
+          .toLowerCase()
+          .includes("application/json")
       ) {
         metricsData.validationFailures++;
 
         return res.status(415).json({
           success: false,
-          error: "Content-Type must be application/json."
+          error:
+            "Content-Type must be application/json."
         });
       }
 
-      // --------------------------------------
-      // 2. Validate request body
-      // --------------------------------------
       if (
         !req.body ||
         typeof req.body !== "object" ||
@@ -627,21 +740,20 @@ app.post(
 
         return res.status(400).json({
           success: false,
-          error: "Invalid request body."
+          error:
+            "Invalid request body."
         });
       }
 
-      // --------------------------------------
-      // 3. Strict request shape
-      // --------------------------------------
-      const bodyKeys = Object.keys(req.body);
-      const allowedKeys = ["prompt", "language"];
+      const keys =
+        Object.keys(req.body);
 
-      const hasInvalidKeys = bodyKeys.some(
-        (key) => !allowedKeys.includes(key)
-      );
-
-      if (hasInvalidKeys) {
+      if (
+        keys.some(
+          (key) =>
+            !["prompt", "language"].includes(key)
+        )
+      ) {
         metricsData.validationFailures++;
 
         return res.status(400).json({
@@ -651,15 +763,13 @@ app.post(
         });
       }
 
-      const { prompt, language } = req.body;
+      const {
+        prompt: rawPrompt,
+        language: rawLanguage
+      } = req.body;
 
-      // --------------------------------------
-      // 4. Validate prompt
-      // --------------------------------------
       if (
-        prompt === undefined ||
-        prompt === null ||
-        typeof prompt !== "string"
+        typeof rawPrompt !== "string"
       ) {
         metricsData.validationFailures++;
 
@@ -670,39 +780,8 @@ app.post(
         });
       }
 
-      const trimmedPrompt = prompt.trim();
-
-      if (trimmedPrompt.length === 0) {
-        metricsData.validationFailures++;
-
-        return res.status(400).json({
-          success: false,
-          error: "Prompt cannot be empty."
-        });
-      }
-
-      // --------------------------------------
-      // 5. Prompt length
-      // --------------------------------------
-      const MAX_PROMPT_LENGTH = 2000;
-
-      if (trimmedPrompt.length > MAX_PROMPT_LENGTH) {
-        metricsData.validationFailures++;
-
-        return res.status(400).json({
-          success: false,
-          error:
-            `Prompt is too long. Maximum allowed length is ${MAX_PROMPT_LENGTH} characters.`
-        });
-      }
-
-      // --------------------------------------
-      // 6. Validate language
-      // --------------------------------------
       if (
-        language === undefined ||
-        language === null ||
-        typeof language !== "string"
+        typeof rawLanguage !== "string"
       ) {
         metricsData.validationFailures++;
 
@@ -713,47 +792,64 @@ app.post(
         });
       }
 
-      const trimmedLanguage = language.trim();
+      const prompt =
+        rawPrompt.trim();
 
-      if (trimmedLanguage.length === 0) {
+      const language =
+        rawLanguage.trim();
+
+      if (!prompt) {
         metricsData.validationFailures++;
 
         return res.status(400).json({
           success: false,
-          error: "Language cannot be empty."
+          error:
+            "Prompt cannot be empty."
         });
       }
 
-      // --------------------------------------
-      // 7. Language whitelist
-      // --------------------------------------
+      if (prompt.length > 2000) {
+        metricsData.validationFailures++;
+
+        return res.status(413).json({
+          success: false,
+          error:
+            "Prompt is too long. Maximum allowed length is 2000 characters."
+        });
+      }
+
+      if (!language) {
+        metricsData.validationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Language cannot be empty."
+        });
+      }
+
       if (
-        !SUPPORTED_LANGUAGES.includes(trimmedLanguage)
+        !SUPPORTED_LANGUAGES.includes(
+          language
+        )
       ) {
         metricsData.validationFailures++;
 
         return res.status(400).json({
           success: false,
-          error: "Unsupported programming language."
+          error:
+            "Unsupported programming language."
         });
       }
 
-      // --------------------------------------
-      // 8. Update language metric
-      // --------------------------------------
-      if (
-        metricsData.generationsByLanguage[
-          trimmedLanguage
-        ] !== undefined
-      ) {
-        metricsData.generationsByLanguage[
-          trimmedLanguage
-        ]++;
-      }
+      metricsData.generationsByLanguage[
+        language
+      ]++;
 
-      // ======================================
-      // GEMINI CODE GENERATION INSTRUCTIONS
-      // ======================================
+      const filename =
+        FILE_NAMES[language] ||
+        "generated.code";
+
       const systemInstruction = `
 You are an expert software developer and code generation assistant.
 
@@ -772,327 +868,219 @@ Rules:
 - Do not add explanations before or after the code.
 `.trim();
 
-      // --------------------------------------
-      // Generation prompt
-      // --------------------------------------
-      const generationPrompt = `
-Target programming language: ${trimmedLanguage}
+      startSSE(res);
 
-User requirement:
-${trimmedPrompt}
-`.trim();
+      const keepAlive =
+        startKeepAlive(res);
 
-      // --------------------------------------
-      // 9. Timeout + AbortController
-      // --------------------------------------
-      const controller = new AbortController();
+      let disconnected = false;
 
-      let isTimedOut = false;
+      req.on("close", () => {
+        disconnected = true;
+      });
 
-      const timeoutId = setTimeout(() => {
-        isTimedOut = true;
-        controller.abort();
-      }, 45000);
+      try {
+        let fullCode = "";
+        let completed = false;
+        let attempts = 0;
 
-      // --------------------------------------
-      // Sleep helper for retry logic
-      // --------------------------------------
-      const sleep = (ms, signal) =>
-        new Promise((resolve, reject) => {
-          if (signal?.aborted) {
-            return reject(
-              new DOMException(
-                "Aborted",
-                "AbortError"
-              )
-            );
-          }
-
-          const timer = setTimeout(resolve, ms);
-
-          signal?.addEventListener(
-            "abort",
-            () => {
-              clearTimeout(timer);
-
-              reject(
-                new DOMException(
-                  "Aborted",
-                  "AbortError"
-                )
-              );
-            },
-            { once: true }
-          );
-        });
-
-      // --------------------------------------
-      // 10. Gemini request + retry
-      // --------------------------------------
-      let geminiResponse;
-
-      const maxAttempts = 3;
-      let attempt = 0;
-
-      while (attempt < maxAttempts) {
-        attempt++;
-
-        if (
-          isTimedOut ||
-          controller.signal.aborted
+        while (
+          !completed &&
+          attempts < 3 &&
+          !disconnected
         ) {
-          break;
-        }
-
-        try {
-          geminiResponse =
-            await ai.models.generateContent({
-              model: MODEL_NAME,
-              contents: generationPrompt,
-              config: {
-                systemInstruction,
-                abortSignal:
-                  controller.signal
-              }
-            });
-
-          break;
-        } catch (sdkError) {
-          const errorMessage = String(
-            sdkError?.message || ""
-          ).toLowerCase();
-
-          // ------------------------------------
-          // Timeout / Abort
-          // ------------------------------------
-          if (
-            isTimedOut ||
-            sdkError?.name === "AbortError" ||
-            errorMessage.includes("aborted")
-          ) {
-            clearTimeout(timeoutId);
-
-            metricsData.timeoutRequests++;
-
-            return res.status(504).json({
-              success: false,
-              error:
-                "Code generation timed out. Please try again."
-            });
-          }
-
-          // ------------------------------------
-          // Detect temporary 503 / unavailable
-          // ------------------------------------
-          const errorStatus =
-            sdkError?.status ||
-            sdkError?.statusCode ||
-            sdkError?.response?.status;
-
-          const isTemporary503 =
-            errorStatus === 503 ||
-            errorMessage.includes("503") ||
-            errorMessage.includes("unavailable") ||
-            errorMessage.includes(
-              "service unavailable"
-            );
-
-          // ------------------------------------
-          // Non-retryable error
-          // ------------------------------------
-          if (!isTemporary503) {
-            clearTimeout(timeoutId);
-
-            metricsData.upstreamGenerationErrors++;
-
-            return res.status(500).json({
-              success: false,
-              error:
-                "Unable to generate code right now. Please try again."
-            });
-          }
-
-          // ------------------------------------
-          // Maximum attempts reached
-          // ------------------------------------
-          if (attempt >= maxAttempts) {
-            clearTimeout(timeoutId);
-
-            metricsData.upstreamGenerationErrors++;
-
-            return res.status(500).json({
-              success: false,
-              error:
-                "Unable to generate code right now. Please try again."
-            });
-          }
-
-          // ------------------------------------
-          // Retry delays
-          // 1st retry = 1.5 sec
-          // 2nd retry = 3 sec
-          // ------------------------------------
-          const delayMs =
-            attempt === 1 ? 1500 : 3000;
+          attempts++;
 
           try {
-            await sleep(
-              delayMs,
-              controller.signal
-            );
-          } catch (sleepError) {
-            if (
-              isTimedOut ||
-              controller.signal.aborted
-            ) {
-              clearTimeout(timeoutId);
+            const stream =
+              await ai.models.generateContentStream(
+                {
+                  model: MODEL_NAME,
 
-              metricsData.timeoutRequests++;
+                  contents:
+                    `Target programming language: ${language}\n\nUser requirement:\n${prompt}`,
 
-              return res.status(504).json({
-                success: false,
-                error:
-                  "Code generation timed out. Please try again."
+                  config: {
+                    systemInstruction
+                  }
+                }
+              );
+
+            for await (const chunk of stream) {
+              if (disconnected) {
+                break;
+              }
+
+              const text =
+                typeof chunk?.text === "string"
+                  ? chunk.text
+                  : "";
+
+              if (!text) {
+                continue;
+              }
+
+              fullCode += text;
+
+              sendSSE(res, {
+                type: "chunk",
+                text
               });
             }
 
-            clearTimeout(timeoutId);
+            completed = !disconnected;
+          } catch (error) {
+            const status =
+              error?.status ??
+              error?.code ??
+              error?.response?.status;
 
-            metricsData.upstreamGenerationErrors++;
+            const message =
+              String(
+                error?.message || ""
+              ).toLowerCase();
 
-            return res.status(500).json({
-              success: false,
-              error:
-                "Unable to generate code right now. Please try again."
-            });
+            const unavailable =
+              status === 503 ||
+              message.includes("503") ||
+              message.includes(
+                "unavailable"
+              ) ||
+              message.includes(
+                "service unavailable"
+              );
+
+            if (
+              unavailable &&
+              !fullCode &&
+              attempts < 3 &&
+              !disconnected
+            ) {
+              await sleep(
+                attempts === 1
+                  ? 1500
+                  : 3000
+              );
+
+              continue;
+            }
+
+            throw error;
           }
         }
-      }
 
-      // --------------------------------------
-      // Clear timeout
-      // --------------------------------------
-      clearTimeout(timeoutId);
+        if (disconnected) {
+          return;
+        }
 
-      // --------------------------------------
-      // Final timeout check
-      // --------------------------------------
-      if (
-        isTimedOut ||
-        controller.signal.aborted
-      ) {
-        metricsData.timeoutRequests++;
+        if (
+          !completed ||
+          !fullCode.trim()
+        ) {
+          metricsData.upstreamGenerationErrors++;
 
-        return res.status(504).json({
-          success: false,
-          error:
-            "Code generation timed out. Please try again."
+          sendSSE(res, {
+            type: "error",
+            error:
+              "Gemini returned an empty response. Please try again."
+          });
+
+          return;
+        }
+
+        if (
+          !cleanGeneratedCode(
+            fullCode
+          )
+        ) {
+          metricsData.upstreamGenerationErrors++;
+
+          sendSSE(res, {
+            type: "error",
+            error:
+              "Gemini returned an empty response. Please try again."
+          });
+
+          return;
+        }
+
+        metricsData.successfulGenerations++;
+
+        sendSSE(res, {
+          type: "done",
+          language,
+          filename
         });
-      }
-
-      // --------------------------------------
-      // Extract code text
-      // --------------------------------------
-      let rawCodeText =
-        geminiResponse &&
-        geminiResponse.text
-          ? geminiResponse.text.trim()
-          : "";
-
-      if (!rawCodeText) {
+      } catch (error) {
         metricsData.upstreamGenerationErrors++;
 
-        return res.status(502).json({
-          success: false,
-          error:
-            "Gemini returned an empty response."
-        });
-      }
+        if (!disconnected) {
+          sendSSE(res, {
+            type: "error",
+            error:
+              "Unable to generate code right now. Please try again."
+          });
 
-      // --------------------------------------
-      // Remove accidental Markdown fences
-      // --------------------------------------
-      if (rawCodeText.startsWith("```")) {
-        const firstNewlineIndex =
-          rawCodeText.indexOf("\n");
-
-        if (firstNewlineIndex !== -1) {
-          rawCodeText =
-            rawCodeText.substring(
-              firstNewlineIndex + 1
-            );
+          console.error(
+            "Gemini Code Streaming Error:",
+            error?.message || error
+          );
         }
+      } finally {
+        clearInterval(keepAlive);
 
-        if (rawCodeText.endsWith("```")) {
-          rawCodeText =
-            rawCodeText.substring(
-              0,
-              rawCodeText.length - 3
-            );
+        if (
+          !res.writableEnded &&
+          !disconnected
+        ) {
+          res.end();
         }
-
-        rawCodeText =
-          rawCodeText.trim();
       }
-
-      // --------------------------------------
-      // Filename
-      // --------------------------------------
-      const filename =
-        FILE_NAMES[trimmedLanguage] ||
-        "generated.code";
-
-      // --------------------------------------
-      // Success metric
-      // --------------------------------------
-      metricsData.successfulGenerations++;
-
-      // --------------------------------------
-      // Final response
-      // --------------------------------------
-      return res.status(200).json({
-        success: true,
-        language: trimmedLanguage,
-        code: rawCodeText,
-        filename
-      });
-    } catch (err) {
-      console.error(
-        "Gemini Generation Error:",
-        err.message || err
-      );
-
-      metricsData.upstreamGenerationErrors++;
-
-      return res.status(500).json({
-        success: false,
-        error:
-          "Unable to generate code right now. Please try again."
-      });
+    } catch (error) {
+      return next(error);
     }
   }
 );
 
 // ==========================================
-// CENTRALIZED ERROR HANDLER
+// CENTRAL ERROR HANDLER
 // ==========================================
-app.use((err, req, res, next) => {
-  console.error(
-    "Server Error Exception:",
-    err.message || err
-  );
 
-  res.status(500).json({
-    success: false,
-    error: "Internal server error."
-  });
-});
+app.use(
+  (err, req, res, next) => {
+    console.error(
+      "Server Error Exception:",
+      err?.message || err
+    );
+
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        error:
+          "Internal server error."
+      });
+    }
+
+    if (!res.writableEnded) {
+      res.end();
+    }
+  }
+);
 
 // ==========================================
 // START SERVER
 // ==========================================
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `[Get Your Code Now] Backend server running on port ${PORT}`
-  );
-});
+
+const server = app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `[Get Your Code Now] Backend server running on port ${PORT}`
+    );
+  }
+);
+
+// Long-running streaming responses
+server.keepAliveTimeout = 120000;
+server.headersTimeout = 125000;
