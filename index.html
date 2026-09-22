@@ -170,7 +170,7 @@
                 <div class="lg:col-span-7 space-y-8">
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold tracking-wide uppercase">
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        AI CODING + LEARNING ASSISTANT • GEMINI INTEGRATED
+                        AI CODING + LEARNING ASSISTANT
                     </div>
 
                     <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1]">
@@ -182,7 +182,7 @@
                     </p>
 
                     <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
-                        Generate code, ask coding questions, explain errors, and learn faster with Google Gemini AI.
+                        Generate code, ask coding questions, explain errors, and learn faster with one focused AI workspace.
                     </p>
 
                     <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -200,8 +200,8 @@
                             <div class="text-xs text-gray-400">Languages Supported</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-bold text-white">Gemini</div>
-                            <div class="text-xs text-gray-400">AI Powered Backend</div>
+                            <div class="text-2xl font-bold text-white">AI</div>
+                            <div class="text-xs text-gray-400">Powered Workspace</div>
                         </div>
                         <div>
                             <div class="text-2xl font-bold text-white">PWA</div>
@@ -222,16 +222,16 @@
                                 </div>
                                 <span class="text-xs font-mono text-gray-400">ai_generator.js</span>
                             </div>
-                            <pre class="font-mono text-xs text-blue-300 overflow-x-auto p-2 bg-darker/60 rounded-xl border border-border/50 leading-relaxed"><code><span class="text-purple-400">async function</span> <span class="text-blue-400">generateCode</span>(prompt) {
-  <span class="text-gray-500">// Step 3C Production Render API</span>
-  <span class="text-purple-400">const</span> res = <span class="text-purple-400">await</span> fetch(<span class="text-green-300">"https://get-your-code-now-api.onrender.com/api/generate"</span>, {
-    method: <span class="text-green-300">"POST"</span>,
-    body: JSON.stringify({ prompt })
+                            <pre class="font-mono text-xs text-blue-300 overflow-x-auto p-2 bg-darker/60 rounded-xl border border-border/50 leading-relaxed"><code><span class="text-purple-400">async function</span> <span class="text-blue-400">getHelp</span>(prompt) {
+  <span class="text-gray-500">// Ask the coding assistant</span>
+  <span class="text-purple-400">const</span> result = <span class="text-purple-400">await</span> askAI({
+    prompt,
+    mode: <span class="text-green-300">"learn"</span>
   });
-  <span class="text-purple-400">return</span> <span class="text-purple-400">await</span> res.json();
+  <span class="text-purple-400">return</span> result;
 }</code></pre>
                             <div class="flex items-center justify-between pt-2 text-xs text-gray-400 font-mono">
-                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> Render Production API</span>
+                                <span class="flex items-center gap-1.5 text-blue-400"><i class="fa-solid fa-circle text-[8px]"></i> AI Learning Assistant</span>
                                 <span>Node.js API</span>
                             </div>
                         </div>
@@ -350,7 +350,7 @@
                 >
                     <div class="inline-block w-9 h-9 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     <div id="workspace-loading-text" class="text-sm font-medium text-gray-300 animate-pulse">
-                        Thinking with Gemini AI...
+                        Thinking...
                     </div>
                 </div>
 
@@ -552,7 +552,7 @@ function verifyToken(req, res, next) {
                     <div class="text-4xl font-black text-purple-500/30 font-mono">03 — Build</div>
                     <h3 class="text-xl font-bold text-white">Copy, edit and use the generated code.</h3>
                     <p class="text-gray-400 text-sm leading-relaxed">
-                        Export or copy your solution straight into your production workspace.
+                        Export or copy your solution straight into your development workspace.
                     </p>
                 </div>
             </div>
@@ -657,7 +657,7 @@ function verifyToken(req, res, next) {
                             </div>
                             <div class="space-y-2">
                                 <h3 class="text-xl font-bold text-white">Get Your Code Now</h3>
-                                <p class="text-xs text-gray-400 font-mono">PWA Step 3C Production</p>
+                                <p class="text-xs text-gray-400 font-mono">PWA App Ready</p>
                             </div>
                             <div class="p-4 rounded-2xl bg-darker border border-border text-left space-y-2 text-xs text-gray-300 font-mono">
                                 <div class="flex justify-between"><span>PWA Status:</span> <span id="pwa-status-text" class="text-yellow-400">Checking...</span></div>
@@ -695,11 +695,11 @@ function verifyToken(req, res, next) {
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-border/50 text-center text-xs text-gray-500 font-mono">
-            AI Coding + Learning Assistant — Production Render Backend Integration.
+            AI Coding + Learning Assistant — Built for focused coding practice and learning.
         </div>
     </footer>
 
-    <!-- Application Logic & Production Render API Connection Script -->
+    <!-- Application Logic & AI Workspace Script -->
     <script>
         // ==========================================
         // 1. PRODUCTION API BASE URL CONFIGURATION
@@ -945,6 +945,7 @@ function verifyToken(req, res, next) {
 
         let isWorkspaceBusy = false;
         let chatQuestionCount = 0;
+        let chatHistory = [];
 
         function escapeHtml(value) {
             return String(value ?? '')
@@ -1201,7 +1202,7 @@ function verifyToken(req, res, next) {
             askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
             clearWorkspaceBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            workspaceLoadingText.textContent = `Gemini is generating ${language} code...`;
+            workspaceLoadingText.textContent = `Thinking...`;
             workspaceLoadingState.classList.remove('hidden');
             workspaceErrorAlert.classList.add('hidden');
 
@@ -1231,7 +1232,7 @@ function verifyToken(req, res, next) {
                     if (event.type === 'chunk') {
                         if (!streamingCode) {
                             streamingCode = appendStreamingCodeMessage(language, '');
-                            workspaceLoadingText.textContent = 'Receiving code from Gemini...';
+                            workspaceLoadingText.textContent = 'Writing code...';
                         }
                         streamingCode.append(event.text || '');
                     } else if (event.type === 'done') {
@@ -1292,7 +1293,7 @@ function verifyToken(req, res, next) {
             generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
             clearWorkspaceBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            workspaceLoadingText.textContent = 'Gemini is preparing your answer...';
+            workspaceLoadingText.textContent = 'Thinking...';
             workspaceLoadingState.classList.remove('hidden');
             workspaceErrorAlert.classList.add('hidden');
 
@@ -1309,7 +1310,11 @@ function verifyToken(req, res, next) {
                     },
                     body: JSON.stringify({
                         prompt,
-                        answerLength
+                        answerLength,
+                        history: chatHistory.map((message) => ({
+                            role: message.role,
+                            content: message.content
+                        }))
                     })
                 });
 
@@ -1325,7 +1330,7 @@ function verifyToken(req, res, next) {
                     if (event.type === 'chunk') {
                         if (!streamingAnswer) {
                             streamingAnswer = appendStreamingAiMessage();
-                            workspaceLoadingText.textContent = 'Receiving answer from Gemini...';
+                            workspaceLoadingText.textContent = 'Replying...';
                         }
                         streamingAnswer.append(event.text || '');
                     } else if (event.type === 'error') {
@@ -1336,6 +1341,16 @@ function verifyToken(req, res, next) {
                 if (!streamingAnswer || !streamingAnswer.getText().trim()) {
                     throw new Error('No answer was returned. Please try again.');
                 }
+
+                const answerText = streamingAnswer.getText().trim();
+
+                chatHistory.push(
+                    { role: 'user', content: prompt },
+                    { role: 'assistant', content: answerText }
+                );
+
+                // Keep only the current 10-question chat context in memory.
+                chatHistory = chatHistory.slice(-20);
 
                 chatQuestionCount++;
                 workspacePrompt.value = '';
@@ -1363,6 +1378,7 @@ function verifyToken(req, res, next) {
             workspacePrompt.value = '';
             workspaceConversation.innerHTML = '';
             chatQuestionCount = 0;
+            chatHistory = [];
             workspaceErrorAlert.classList.add('hidden');
             workspaceLoadingState.classList.add('hidden');
             updateQuestionCount();
