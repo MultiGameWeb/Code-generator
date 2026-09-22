@@ -38,8 +38,17 @@ const metricsData = {
   successfulGenerations: 0,
   validationFailures: 0,
   rateLimitedRequests: 0,
-  timeoutRequests: 0,
+
+    timeoutRequests: 0,
   upstreamGenerationErrors: 0,
+
+  totalChatRequests: 0,
+  successfulChats: 0,
+  chatValidationFailures: 0,
+  chatRateLimitedRequests: 0,
+  chatTimeoutRequests: 0,
+  chatUpstreamErrors: 0,
+
   generationsByLanguage: {
     Python: 0,
     JavaScript: 0,
@@ -185,7 +194,189 @@ const FILE_NAMES = {
   PHP: "generated.php",
   SQL: "query.sql"
 };
+const ASK_AI_SYSTEM_INSTRUCTION = `
+You are a friendly AI coding and learning assistant.
 
+Explain concepts clearly and simply.
+Adapt explanations to the user's level.
+For beginners, avoid unnecessary jargon.
+Use examples when useful.
+When explaining code, provide small correct examples.
+When a user asks a coding question, explain both what to do and why.
+When the user provides code or an error, help explain and diagnose it.
+For programming questions, prefer practical runnable examples.
+Do not invent facts.
+Return a helpful natural-language answer.
+`.trim();
+// IP-based Rate Limiter strictly for POST /api/chat
+const chatLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 chat requests per windowMs
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: (req, res) => {
+    metricsData.chatRateLimitedRequests++;
+    metricsData.rateLimitedRequests++;
+
+    return res.status(429).json({
+      success: false,
+      error: "Too many chat requests. Please try again later."
+    });
+  }
+});
+
+// Ask AI Endpoint
+app.post("/api/chat", chatLimiter, async (req, res, next) => {
+  metricsData.totalChatRequests++;
+
+  try {
+    // 1. Content-Type validation
+    const contentType = req.headers["content-type"];
+
+    if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+      metricsData.chatValidationFailures++;
+
+      return res.status(415).json({
+        success: false,
+        error: "Content-Type must be application/json."
+      });
+    }
+
+    // 2. Validate request body
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
+      metricsData.chatValidationFailures++;
+
+      return res.status(400).json({
+        success: false,
+        error: "Request body must be a JSON object."
+      });
+    }
+
+    // 3. Strict request shape: only prompt is allowed
+    const bodyKeys = Object.keys(req.body);
+
+    if (bodyKeys.some((key) => key !== "prompt")) {
+      metricsData.chatValidationFailures++;
+
+      return res.status(400).json({
+        success: false,
+        error: "Only 'prompt' is allowed in the request body."
+      });
+    }
+
+    // 4. Validate prompt
+    if (typeof req.body.prompt !== "string") {
+      metricsData.chatValidationFailures++;
+
+      return res.status(400).json({
+        success: false,
+        error: "Prompt must be a string."
+      });
+    }
+
+    const trimmedPrompt = req.body.prompt.trim();
+
+    if (!trimmedPrompt) {
+      metricsData.chatValidationFailures++;
+
+      return res.status(400).json({
+        success: false,
+        error: "Prompt cannot be empty."
+      });
+    }
+
+    // 5. Prompt length limit
+    if (trimmedPrompt.length > 2000) {
+      metricsData.chatValidationFailures++;
+
+      return res.status(413).json({
+        success: false,
+        error: "Prompt is too long. Maximum length is 2000 characters."
+      });
+    }
+
+    // 6. Timeout guard
+    const controller = new AbortController();
+
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 45000);
+
+    try {
+      let response;
+
+      // 7. Retry only temporary Gemini 503 / UNAVAILABLE errors
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          response = await ai.models.generateContent({
+            model: MODEL_NAME,
+            contents: trimmedPrompt,
+            config: {
+              systemInstruction: ASK_AI_SYSTEM_INSTRUCTION,
+              abortSignal: controller.signal
+            }
+          });
+
+          break;
+        } catch (error) {
+          const status =
+            error?.status ??
+            error?.code ??
+            error?.response?.status;
+
+          const isUnavailable =
+            status === 503 ||
+            String(error?.message || "")
+              .toLowerCase()
+              .includes("unavailable");
+
+          if (!isUnavailable || attempt === 3) {
+            throw error;
+          }
+
+          await new Promise((resolve) =>
+            setTimeout(resolve, attempt * 1500)
+          );
+        }
+      }
+
+      const answer = response?.text?.trim();
+
+      if (!answer) {
+        metricsData.chatUpstreamErrors++;
+
+        return res.status(502).json({
+          success: false,
+          error: "AI returned an empty response. Please try again."
+        });
+      }
+
+      metricsData.successfulChats++;
+
+      return res.status(200).json({
+        success: true,
+        answer
+      });
+    } catch (error) {
+      if (error?.name === "AbortError") {
+        metricsData.chatTimeoutRequests++;
+
+        return res.status(504).json({
+          success: false,
+          error: "AI request timed out. Please try again."
+        });
+      }
+
+      metricsData.chatUpstreamErrors++;
+
+      return next(error);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (error) {
+    return next(error);
+  }
+});
 // Health Check Endpoint (Exempt from rate-limiting & completely isolated from private metrics)
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -208,6 +399,12 @@ app.get("/api/admin/metrics", verifyAdminToken, (req, res) => {
       rateLimitedRequests: metricsData.rateLimitedRequests,
       timeoutRequests: metricsData.timeoutRequests,
       upstreamGenerationErrors: metricsData.upstreamGenerationErrors,
+          totalChatRequests: metricsData.totalChatRequests,
+      successfulChats: metricsData.successfulChats,
+      chatValidationFailures: metricsData.chatValidationFailures,
+      chatRateLimitedRequests: metricsData.chatRateLimitedRequests,
+      chatTimeoutRequests: metricsData.chatTimeoutRequests,
+      chatUpstreamErrors: metricsData.chatUpstreamErrors,
       generationsByLanguage: { ...metricsData.generationsByLanguage }
     }
   });
