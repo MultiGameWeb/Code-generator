@@ -1017,7 +1017,121 @@ function verifyToken(req, res, next) {
         if(generateBtn) {
             generateBtn.addEventListener('click', handleCodeGeneration);
         }
+// ==========================================
+// 7. ASK AI ASSISTANT CLIENT INTEGRATION
+// ==========================================
+const chatPromptInput = document.getElementById('chat-prompt-input');
+const askAiBtn = document.getElementById('ask-ai-btn');
+const clearChatBtn = document.getElementById('clear-chat-btn');
 
+const chatLoadingState = document.getElementById('chat-loading-state');
+const chatErrorAlert = document.getElementById('chat-error-alert');
+const chatErrorMessage = document.getElementById('chat-error-message');
+const chatResultContainer = document.getElementById('chat-result-container');
+const chatAnswerText = document.getElementById('chat-answer-text');
+const copyAnswerBtn = document.getElementById('copy-answer-btn');
+
+let isAskingAI = false;
+
+async function handleAskAI() {
+    if (isAskingAI) return;
+
+    const prompt = chatPromptInput.value.trim();
+
+    if (!prompt) {
+        chatErrorMessage.textContent = "Please enter a question.";
+        chatErrorAlert.classList.remove('hidden');
+        return;
+    }
+
+    isAskingAI = true;
+    askAiBtn.disabled = true;
+    askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    chatLoadingState.classList.remove('hidden');
+    chatResultContainer.classList.add('hidden');
+    chatErrorAlert.classList.add('hidden');
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/chat`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ prompt })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.error || "Unable to get an AI response right now. Please try again."
+            );
+        }
+
+        chatAnswerText.textContent = data.answer;
+
+        chatLoadingState.classList.add('hidden');
+        chatResultContainer.classList.remove('hidden');
+
+        chatResultContainer.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+
+    } catch (err) {
+        console.error("Ask AI error:", err);
+
+        chatLoadingState.classList.add('hidden');
+        chatErrorMessage.textContent =
+            err.message || "Unable to get an AI response right now. Please try again.";
+
+        chatErrorAlert.classList.remove('hidden');
+
+    } finally {
+        isAskingAI = false;
+        askAiBtn.disabled = false;
+        askAiBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+if (askAiBtn) {
+    askAiBtn.addEventListener('click', handleAskAI);
+}
+
+if (clearChatBtn) {
+    clearChatBtn.addEventListener('click', () => {
+        chatPromptInput.value = "";
+        chatAnswerText.textContent = "";
+
+        chatResultContainer.classList.add('hidden');
+        chatErrorAlert.classList.add('hidden');
+        chatLoadingState.classList.add('hidden');
+    });
+}
+
+if (copyAnswerBtn) {
+    copyAnswerBtn.addEventListener('click', async () => {
+        const answer = chatAnswerText.textContent;
+
+        if (!answer) return;
+
+        try {
+            await navigator.clipboard.writeText(answer);
+
+            copyAnswerBtn.innerHTML =
+                '<i class="fa-solid fa-check text-emerald-400"></i> Copied!';
+
+            setTimeout(() => {
+                copyAnswerBtn.innerHTML =
+                    '<i class="fa-regular fa-copy"></i> Copy Answer';
+            }, 2000);
+
+        } catch (error) {
+            console.error("Copy answer error:", error);
+        }
+    });
+}
         // Action buttons inside code result card
         const copyBtn = document.getElementById('copy-btn');
         if(copyBtn) {
