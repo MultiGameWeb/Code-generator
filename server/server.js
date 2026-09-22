@@ -9,112 +9,110 @@ import { GoogleGenAI } from "@google/genai";
 dotenv.config();
 
 if (!process.env.GEMINI_API_KEY) {
-  console.error(
-    "CRITICAL CONFIGURATION ERROR: GEMINI_API_KEY is missing from environment variables."
-  );
+  console.error("GEMINI_API_KEY is missing from environment variables.");
   process.exit(1);
 }
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
-
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const MODEL_NAME = "gemini-3.5-flash-lite";
-const app = express();
 const PORT = process.env.PORT || 3000;
 const FRONTEND_ORIGIN =
   process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
-app.set("trust proxy", 1);
+const MAX_PROMPT = 2000;
+const MAX_HISTORY_MESSAGES = 20;
+const MAX_HISTORY_MESSAGE_LENGTH = 6000;
 
-// ==========================================
-// METRICS
-// ==========================================
+const LANGUAGES = [
+  "Python",
+  "JavaScript",
+  "TypeScript",
+  "HTML",
+  "CSS",
+  "Java",
+  "C",
+  "C++",
+  "C#",
+  "PHP",
+  "SQL"
+];
 
-const metricsData = {
+const FILE_NAMES = {
+  Python: "generated.py",
+  JavaScript: "generated.js",
+  TypeScript: "generated.ts",
+  HTML: "index.html",
+  CSS: "styles.css",
+  Java: "Generated.java",
+  C: "generated.c",
+  "C++": "generated.cpp",
+  "C#": "Generated.cs",
+  PHP: "generated.php",
+  SQL: "query.sql"
+};
+
+const ANSWER_LENGTHS = ["short", "normal", "long"];
+
+const ASK_AI_SYSTEM = `
+You are a friendly AI coding and learning assistant.
+Explain concepts clearly and simply.
+Adapt explanations to the user's level.
+For beginners, avoid unnecessary jargon.
+Use examples when useful.
+When explaining code, provide small correct examples.
+When a user asks a coding question, explain both what to do and why.
+When the user provides code or an error, help explain and diagnose it.
+For programming questions, prefer practical runnable examples.
+Use the current conversation context for follow-up questions.
+Do not invent facts.
+Return a helpful natural-language answer.
+`.trim();
+
+const CODE_SYSTEM = `
+You are an expert software developer and code generation assistant.
+Generate clean, practical, correct source code.
+Follow the user's requirement carefully.
+Generate code for the requested programming language.
+Prefer complete runnable code when practical.
+Include necessary imports.
+Use sensible naming and structure.
+Handle obvious edge cases.
+Do not invent unnecessary features.
+Return only source code without Markdown code fences or explanations.
+`.trim();
+
+const metrics = {
   serverStartedAt: Date.now(),
 
   totalGenerationRequests: 0,
   successfulGenerations: 0,
   validationFailures: 0,
   rateLimitedRequests: 0,
-  upstreamGenerationErrors: 0,
   timeoutRequests: 0,
+  upstreamGenerationErrors: 0,
 
   totalChatRequests: 0,
   successfulChats: 0,
   chatValidationFailures: 0,
   chatRateLimitedRequests: 0,
-  chatUpstreamErrors: 0,
   chatTimeoutRequests: 0,
+  chatUpstreamErrors: 0,
 
-  generationsByLanguage: {
-    Python: 0,
-    JavaScript: 0,
-    TypeScript: 0,
-    HTML: 0,
-    CSS: 0,
-    Java: 0,
-    C: 0,
-    "C++": 0,
-    "C#": 0,
-    PHP: 0,
-    SQL: 0
-  }
+  generationsByLanguage: Object.fromEntries(
+    LANGUAGES.map((x) => [x, 0])
+  )
 };
 
-// ==========================================
-// ADMIN TOKEN
-// ==========================================
+const app = express();
 
-function verifyAdminToken(req, res, next) {
-  const adminToken = process.env.METRICS_ADMIN_TOKEN;
-  const authHeader = req.headers.authorization;
-
-  if (
-    !adminToken ||
-    !authHeader ||
-    !authHeader.startsWith("Bearer ")
-  ) {
-    return res.status(401).json({
-      success: false,
-      error: "Unauthorized."
-    });
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const tokenBuffer = Buffer.from(token);
-    const adminBuffer = Buffer.from(adminToken);
-
-    if (
-      tokenBuffer.length !== adminBuffer.length ||
-      !crypto.timingSafeEqual(tokenBuffer, adminBuffer)
-    ) {
-      return res.status(401).json({
-        success: false,
-        error: "Unauthorized."
-      });
-    }
-  } catch {
-    return res.status(401).json({
-      success: false,
-      error: "Unauthorized."
-    });
-  }
-
-  next();
-}
-
-// ==========================================
-// CORS
-// ==========================================
+app.set("trust proxy", 1);
 
 const allowedOrigins = FRONTEND_ORIGIN
   .split(",")
-  .map((origin) => origin.trim())
+  .map((x) => x.trim())
   .filter(Boolean);
+
+app.use(helmet());
 
 app.use(
   cors({
@@ -123,16 +121,10 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error("Not allowed by CORS policy"));
+      callback(new Error("Not allowed by CORS policy"));
     }
   })
 );
-
-// ==========================================
-// SECURITY
-// ==========================================
-
-app.use(helmet());
 
 app.use(
   express.json({
@@ -141,7 +133,7 @@ app.use(
 );
 
 // ==========================================
-// BODY PARSER ERRORS
+// JSON / BODY PARSER ERRORS
 // ==========================================
 
 app.use((err, req, res, next) => {
@@ -171,10 +163,51 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// STREAMING HELPERS
+// ADMIN AUTH
 // ==========================================
 
-function startSSE(res) {
+function adminAuth(req, res, next) {
+  const secret = process.env.METRICS_ADMIN_TOKEN;
+  const header = req.headers.authorization;
+
+  if (
+    !secret ||
+    !header?.startsWith("Bearer ")
+  ) {
+    return res.status(401).json({
+      success: false,
+      error: "Unauthorized."
+    });
+  }
+
+  try {
+    const a = Buffer.from(header.slice(7));
+    const b = Buffer.from(secret);
+
+    if (
+      a.length !== b.length ||
+      !crypto.timingSafeEqual(a, b)
+    ) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized."
+      });
+    }
+  } catch {
+    return res.status(401).json({
+      success: false,
+      error: "Unauthorized."
+    });
+  }
+
+  next();
+}
+
+// ==========================================
+// SSE HELPERS
+// ==========================================
+
+function sseStart(res) {
   res.status(200);
 
   res.setHeader(
@@ -200,48 +233,45 @@ function startSSE(res) {
   res.flushHeaders?.();
 }
 
-function sendSSE(res, payload) {
-  if (res.writableEnded || res.destroyed) {
-    return;
+function sseSend(res, data) {
+  if (
+    !res.writableEnded &&
+    !res.destroyed
+  ) {
+    res.write(
+      `data: ${JSON.stringify(data)}\n\n`
+    );
   }
-
-  res.write(
-    `data: ${JSON.stringify(payload)}\n\n`
-  );
 }
 
-function startKeepAlive(res) {
+function keepAlive(res) {
   return setInterval(() => {
-    if (!res.writableEnded && !res.destroyed) {
+    if (
+      !res.writableEnded &&
+      !res.destroyed
+    ) {
       res.write(": keepalive\n\n");
     }
   }, 15000);
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
+const sleep = (ms) =>
+  new Promise((resolve) =>
+    setTimeout(resolve, ms)
+  );
 
-function cleanGeneratedCode(code) {
+function cleanCode(code) {
   let value = String(code || "").trim();
 
   if (value.startsWith("```")) {
-    const newlineIndex =
-      value.indexOf("\n");
+    const n = value.indexOf("\n");
 
-    if (newlineIndex !== -1) {
-      value = value.substring(
-        newlineIndex + 1
-      );
+    if (n !== -1) {
+      value = value.slice(n + 1);
     }
 
     if (value.endsWith("```")) {
-      value = value.substring(
-        0,
-        value.length - 3
-      );
+      value = value.slice(0, -3);
     }
   }
 
@@ -249,61 +279,94 @@ function cleanGeneratedCode(code) {
 }
 
 // ==========================================
-// LANGUAGES
+// HISTORY VALIDATION
 // ==========================================
 
-const SUPPORTED_LANGUAGES = [
-  "Python",
-  "JavaScript",
-  "TypeScript",
-  "HTML",
-  "CSS",
-  "Java",
-  "C",
-  "C++",
-  "C#",
-  "PHP",
-  "SQL"
-];
+function validateHistory(history) {
+  if (history === undefined) {
+    return [];
+  }
 
-const FILE_NAMES = {
-  Python: "generated.py",
-  JavaScript: "generated.js",
-  TypeScript: "generated.ts",
-  HTML: "index.html",
-  CSS: "styles.css",
-  Java: "Generated.java",
-  C: "generated.c",
-  "C++": "generated.cpp",
-  "C#": "Generated.cs",
-  PHP: "generated.php",
-  SQL: "query.sql"
-};
+  if (!Array.isArray(history)) {
+    throw new Error(
+      "History must be an array."
+    );
+  }
 
-// ==========================================
-// ASK AI INSTRUCTION
-// ==========================================
+  if (
+    history.length >
+    MAX_HISTORY_MESSAGES
+  ) {
+    throw new Error(
+      `History cannot contain more than ${MAX_HISTORY_MESSAGES} messages.`
+    );
+  }
 
-const ASK_AI_SYSTEM_INSTRUCTION = `
-You are a friendly AI coding and learning assistant.
+  return history.map((item, i) => {
+    if (
+      !item ||
+      typeof item !== "object" ||
+      Array.isArray(item)
+    ) {
+      throw new Error(
+        `Invalid history message at position ${i + 1}.`
+      );
+    }
 
-Explain concepts clearly and simply.
-Adapt explanations to the user's level.
-For beginners, avoid unnecessary jargon.
-Use examples when useful.
-When explaining code, provide small correct examples.
-When a user asks a coding question, explain both what to do and why.
-When the user provides code or an error, help explain and diagnose it.
-For programming questions, prefer practical runnable examples.
-Do not invent facts.
-Return a helpful natural-language answer.
-`.trim();
+    if (
+      !("role" in item) ||
+      !("content" in item)
+    ) {
+      throw new Error(
+        "History messages must contain role and content."
+      );
+    }
 
-const SUPPORTED_ANSWER_LENGTHS = [
-  "short",
-  "normal",
-  "long"
-];
+    let role = item.role;
+
+    const content =
+      typeof item.content === "string"
+        ? item.content.trim()
+        : "";
+
+    if (role === "assistant") {
+      role = "model";
+    }
+
+    if (
+      role !== "user" &&
+      role !== "model"
+    ) {
+      throw new Error(
+        `Unsupported history role at position ${i + 1}.`
+      );
+    }
+
+    if (!content) {
+      throw new Error(
+        `History content cannot be empty at position ${i + 1}.`
+      );
+    }
+
+    if (
+      content.length >
+      MAX_HISTORY_MESSAGE_LENGTH
+    ) {
+      throw new Error(
+        `History message at position ${i + 1} is too long.`
+      );
+    }
+
+    return {
+      role,
+      parts: [
+        {
+          text: content
+        }
+      ]
+    };
+  });
+}
 
 // ==========================================
 // RATE LIMITERS
@@ -316,9 +379,9 @@ const generateLimiter = rateLimit({
   legacyHeaders: false,
 
   handler: (req, res) => {
-    metricsData.rateLimitedRequests++;
+    metrics.rateLimitedRequests++;
 
-    return res.status(429).json({
+    res.status(429).json({
       success: false,
       error:
         "Too many generation requests. Please try again later."
@@ -333,10 +396,10 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 
   handler: (req, res) => {
-    metricsData.chatRateLimitedRequests++;
-    metricsData.rateLimitedRequests++;
+    metrics.chatRateLimitedRequests++;
+    metrics.rateLimitedRequests++;
 
-    return res.status(429).json({
+    res.status(429).json({
       success: false,
       error:
         "Too many chat requests. Please try again later."
@@ -349,7 +412,7 @@ const chatLimiter = rateLimit({
 // ==========================================
 
 app.get("/api/health", (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
     service: "Get Your Code Now API"
   });
@@ -361,58 +424,22 @@ app.get("/api/health", (req, res) => {
 
 app.get(
   "/api/admin/metrics",
-  verifyAdminToken,
+  adminAuth,
   (req, res) => {
-    const uptimeSeconds = Math.floor(
-      (Date.now() -
-        metricsData.serverStartedAt) /
-        1000
-    );
-
-    return res.status(200).json({
+    res.json({
       success: true,
 
       metrics: {
-        uptimeSeconds,
+        uptimeSeconds: Math.floor(
+          (Date.now() -
+            metrics.serverStartedAt) /
+            1000
+        ),
 
-        totalGenerationRequests:
-          metricsData.totalGenerationRequests,
-
-        successfulGenerations:
-          metricsData.successfulGenerations,
-
-        validationFailures:
-          metricsData.validationFailures,
-
-        rateLimitedRequests:
-          metricsData.rateLimitedRequests,
-
-        timeoutRequests:
-          metricsData.timeoutRequests,
-
-        upstreamGenerationErrors:
-          metricsData.upstreamGenerationErrors,
-
-        totalChatRequests:
-          metricsData.totalChatRequests,
-
-        successfulChats:
-          metricsData.successfulChats,
-
-        chatValidationFailures:
-          metricsData.chatValidationFailures,
-
-        chatRateLimitedRequests:
-          metricsData.chatRateLimitedRequests,
-
-        chatTimeoutRequests:
-          metricsData.chatTimeoutRequests,
-
-        chatUpstreamErrors:
-          metricsData.chatUpstreamErrors,
+        ...metrics,
 
         generationsByLanguage: {
-          ...metricsData.generationsByLanguage
+          ...metrics.generationsByLanguage
         }
       }
     });
@@ -420,26 +447,27 @@ app.get(
 );
 
 // ==========================================
-// ASK AI - STREAMING
+// ASK AI
+// STREAMING + CURRENT CHAT CONTEXT
 // ==========================================
 
 app.post(
   "/api/chat",
   chatLimiter,
   async (req, res, next) => {
-    metricsData.totalChatRequests++;
+    metrics.totalChatRequests++;
 
     try {
-      const contentType =
+      const type =
         req.headers["content-type"];
 
       if (
-        !contentType ||
-        !contentType
+        !type ||
+        !type
           .toLowerCase()
           .includes("application/json")
       ) {
-        metricsData.chatValidationFailures++;
+        metrics.chatValidationFailures++;
 
         return res.status(415).json({
           success: false,
@@ -453,7 +481,7 @@ app.post(
         typeof req.body !== "object" ||
         Array.isArray(req.body)
       ) {
-        metricsData.chatValidationFailures++;
+        metrics.chatValidationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -462,40 +490,38 @@ app.post(
         });
       }
 
-      const keys = Object.keys(req.body);
+      const keys =
+        Object.keys(req.body);
 
       if (
         keys.some(
           (key) =>
-            !["prompt", "answerLength"].includes(key)
+            ![
+              "prompt",
+              "answerLength",
+              "history"
+            ].includes(key)
         )
       ) {
-        metricsData.chatValidationFailures++;
+        metrics.chatValidationFailures++;
 
         return res.status(400).json({
           success: false,
           error:
-            "Only 'prompt' and 'answerLength' are allowed in the request body."
-        });
-      }
-
-      if (
-        typeof req.body.prompt !== "string"
-      ) {
-        metricsData.chatValidationFailures++;
-
-        return res.status(400).json({
-          success: false,
-          error:
-            "Prompt must be a string."
+            "Only prompt, answerLength, and history are allowed."
         });
       }
 
       const prompt =
-        req.body.prompt.trim();
+        typeof req.body.prompt === "string"
+          ? req.body.prompt.trim()
+          : "";
+
+      const answerLength =
+        req.body.answerLength ?? "normal";
 
       if (!prompt) {
-        metricsData.chatValidationFailures++;
+        metrics.chatValidationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -504,8 +530,8 @@ app.post(
         });
       }
 
-      if (prompt.length > 2000) {
-        metricsData.chatValidationFailures++;
+      if (prompt.length > MAX_PROMPT) {
+        metrics.chatValidationFailures++;
 
         return res.status(413).json({
           success: false,
@@ -514,18 +540,12 @@ app.post(
         });
       }
 
-      const answerLength =
-        req.body.answerLength === undefined
-          ? "normal"
-          : req.body.answerLength;
-
       if (
-        typeof answerLength !== "string" ||
-        !SUPPORTED_ANSWER_LENGTHS.includes(
+        !ANSWER_LENGTHS.includes(
           answerLength
         )
       ) {
-        metricsData.chatValidationFailures++;
+        metrics.chatValidationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -534,21 +554,49 @@ app.post(
         });
       }
 
-      const lengthInstruction = {
+      let history;
+
+      try {
+        history = validateHistory(
+          req.body.history
+        );
+      } catch (error) {
+        metrics.chatValidationFailures++;
+
+        return res.status(400).json({
+          success: false,
+          error: error.message
+        });
+      }
+
+      const style = {
         short:
-          "Keep the answer concise and focused. Prefer a few short paragraphs or bullets and small examples when useful.",
+          "Keep the answer concise and focused.",
 
         normal:
-          "Give a balanced explanation with enough detail for understanding without unnecessary length.",
+          "Give a balanced explanation with useful detail.",
 
         long:
-          "Give a detailed explanation with clear steps, examples, and useful context. Avoid unnecessary repetition."
+          "Give a detailed explanation with clear steps, examples, and useful context."
       }[answerLength];
 
-      startSSE(res);
+      const contents = [
+        ...history,
 
-      const keepAlive =
-        startKeepAlive(res);
+        {
+          role: "user",
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ];
+
+      sseStart(res);
+
+      const ping =
+        keepAlive(res);
 
       let disconnected = false;
 
@@ -558,15 +606,15 @@ app.post(
 
       try {
         let fullAnswer = "";
-        let completed = false;
-        let attempts = 0;
+        let attempt = 0;
+        let done = false;
 
         while (
-          !completed &&
-          attempts < 3 &&
+          !done &&
+          attempt < 3 &&
           !disconnected
         ) {
-          attempts++;
+          attempt++;
 
           try {
             const stream =
@@ -574,16 +622,18 @@ app.post(
                 {
                   model: MODEL_NAME,
 
-                  contents: prompt,
+                  contents,
 
                   config: {
                     systemInstruction:
-                      `${ASK_AI_SYSTEM_INSTRUCTION}\n\nAnswer style:\n${lengthInstruction}`
+                      `${ASK_AI_SYSTEM}\n\nAnswer style:\n${style}`
                   }
                 }
               );
 
-            for await (const chunk of stream) {
+            for await (
+              const chunk of stream
+            ) {
               if (disconnected) {
                 break;
               }
@@ -599,42 +649,37 @@ app.post(
 
               fullAnswer += text;
 
-              sendSSE(res, {
+              sseSend(res, {
                 type: "chunk",
                 text
               });
             }
 
-            completed = !disconnected;
+            done = !disconnected;
           } catch (error) {
             const status =
               error?.status ??
               error?.code ??
               error?.response?.status;
 
-            const message =
+            const msg =
               String(
                 error?.message || ""
               ).toLowerCase();
 
-            const unavailable =
+            const temporary =
               status === 503 ||
-              message.includes("503") ||
-              message.includes(
-                "unavailable"
-              ) ||
-              message.includes(
-                "service unavailable"
-              );
+              msg.includes("503") ||
+              msg.includes("unavailable");
 
             if (
-              unavailable &&
+              temporary &&
               !fullAnswer &&
-              attempts < 3 &&
+              attempt < 3 &&
               !disconnected
             ) {
               await sleep(
-                attempts === 1
+                attempt === 1
                   ? 1500
                   : 3000
               );
@@ -651,43 +696,43 @@ app.post(
         }
 
         if (
-          !completed ||
+          !done ||
           !fullAnswer.trim()
         ) {
-          metricsData.chatUpstreamErrors++;
+          metrics.chatUpstreamErrors++;
 
-          sendSSE(res, {
+          sseSend(res, {
             type: "error",
             error:
-              "AI returned an empty response. Please try again."
+              "No answer was returned. Please try again."
           });
 
           return;
         }
 
-        metricsData.successfulChats++;
+        metrics.successfulChats++;
 
-        sendSSE(res, {
+        sseSend(res, {
           type: "done",
           answerLength
         });
       } catch (error) {
-        metricsData.chatUpstreamErrors++;
+        metrics.chatUpstreamErrors++;
 
         if (!disconnected) {
-          sendSSE(res, {
+          console.error(
+            "Chat streaming error:",
+            error?.message || error
+          );
+
+          sseSend(res, {
             type: "error",
             error:
               "Unable to get an AI response right now. Please try again."
           });
-
-          console.error(
-            "Gemini Chat Streaming Error:",
-            error?.message || error
-          );
         }
       } finally {
-        clearInterval(keepAlive);
+        clearInterval(ping);
 
         if (
           !res.writableEnded &&
@@ -697,32 +742,33 @@ app.post(
         }
       }
     } catch (error) {
-      return next(error);
+      next(error);
     }
   }
 );
 
 // ==========================================
-// GENERATE CODE - STREAMING
+// CODE GENERATION
+// STREAMING
 // ==========================================
 
 app.post(
   "/api/generate",
   generateLimiter,
   async (req, res, next) => {
-    metricsData.totalGenerationRequests++;
+    metrics.totalGenerationRequests++;
 
     try {
-      const contentType =
+      const type =
         req.headers["content-type"];
 
       if (
-        !contentType ||
-        !contentType
+        !type ||
+        !type
           .toLowerCase()
           .includes("application/json")
       ) {
-        metricsData.validationFailures++;
+        metrics.validationFailures++;
 
         return res.status(415).json({
           success: false,
@@ -736,7 +782,7 @@ app.post(
         typeof req.body !== "object" ||
         Array.isArray(req.body)
       ) {
-        metricsData.validationFailures++;
+        metrics.validationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -751,10 +797,13 @@ app.post(
       if (
         keys.some(
           (key) =>
-            !["prompt", "language"].includes(key)
+            ![
+              "prompt",
+              "language"
+            ].includes(key)
         )
       ) {
-        metricsData.validationFailures++;
+        metrics.validationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -763,43 +812,20 @@ app.post(
         });
       }
 
-      const {
-        prompt: rawPrompt,
-        language: rawLanguage
-      } = req.body;
-
-      if (
-        typeof rawPrompt !== "string"
-      ) {
-        metricsData.validationFailures++;
-
-        return res.status(400).json({
-          success: false,
-          error:
-            "Prompt is required and must be a string."
-        });
-      }
-
-      if (
-        typeof rawLanguage !== "string"
-      ) {
-        metricsData.validationFailures++;
-
-        return res.status(400).json({
-          success: false,
-          error:
-            "Language is required and must be a string."
-        });
-      }
-
       const prompt =
-        rawPrompt.trim();
+        typeof req.body.prompt ===
+        "string"
+          ? req.body.prompt.trim()
+          : "";
 
       const language =
-        rawLanguage.trim();
+        typeof req.body.language ===
+        "string"
+          ? req.body.language.trim()
+          : "";
 
       if (!prompt) {
-        metricsData.validationFailures++;
+        metrics.validationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -808,8 +834,8 @@ app.post(
         });
       }
 
-      if (prompt.length > 2000) {
-        metricsData.validationFailures++;
+      if (prompt.length > MAX_PROMPT) {
+        metrics.validationFailures++;
 
         return res.status(413).json({
           success: false,
@@ -818,22 +844,10 @@ app.post(
         });
       }
 
-      if (!language) {
-        metricsData.validationFailures++;
-
-        return res.status(400).json({
-          success: false,
-          error:
-            "Language cannot be empty."
-        });
-      }
-
       if (
-        !SUPPORTED_LANGUAGES.includes(
-          language
-        )
+        !LANGUAGES.includes(language)
       ) {
-        metricsData.validationFailures++;
+        metrics.validationFailures++;
 
         return res.status(400).json({
           success: false,
@@ -842,7 +856,7 @@ app.post(
         });
       }
 
-      metricsData.generationsByLanguage[
+      metrics.generationsByLanguage[
         language
       ]++;
 
@@ -850,28 +864,10 @@ app.post(
         FILE_NAMES[language] ||
         "generated.code";
 
-      const systemInstruction = `
-You are an expert software developer and code generation assistant.
+      sseStart(res);
 
-Generate clean, practical, correct source code.
-
-Rules:
-- Follow the user's requirement carefully.
-- Generate code for the requested programming language.
-- Prefer complete runnable code when practical.
-- Include necessary imports.
-- Use sensible naming and structure.
-- Handle obvious edge cases.
-- Do not invent unnecessary features.
-- Return only source code.
-- Do not return Markdown code fences.
-- Do not add explanations before or after the code.
-`.trim();
-
-      startSSE(res);
-
-      const keepAlive =
-        startKeepAlive(res);
+      const ping =
+        keepAlive(res);
 
       let disconnected = false;
 
@@ -880,16 +876,29 @@ Rules:
       });
 
       try {
+        const contents = [
+          {
+            role: "user",
+
+            parts: [
+              {
+                text:
+                  `Target programming language: ${language}\n\nUser requirement:\n${prompt}`
+              }
+            ]
+          }
+        ];
+
         let fullCode = "";
-        let completed = false;
-        let attempts = 0;
+        let attempt = 0;
+        let done = false;
 
         while (
-          !completed &&
-          attempts < 3 &&
+          !done &&
+          attempt < 3 &&
           !disconnected
         ) {
-          attempts++;
+          attempt++;
 
           try {
             const stream =
@@ -897,16 +906,18 @@ Rules:
                 {
                   model: MODEL_NAME,
 
-                  contents:
-                    `Target programming language: ${language}\n\nUser requirement:\n${prompt}`,
+                  contents,
 
                   config: {
-                    systemInstruction
+                    systemInstruction:
+                      CODE_SYSTEM
                   }
                 }
               );
 
-            for await (const chunk of stream) {
+            for await (
+              const chunk of stream
+            ) {
               if (disconnected) {
                 break;
               }
@@ -922,42 +933,37 @@ Rules:
 
               fullCode += text;
 
-              sendSSE(res, {
+              sseSend(res, {
                 type: "chunk",
                 text
               });
             }
 
-            completed = !disconnected;
+            done = !disconnected;
           } catch (error) {
             const status =
               error?.status ??
               error?.code ??
               error?.response?.status;
 
-            const message =
+            const msg =
               String(
                 error?.message || ""
               ).toLowerCase();
 
-            const unavailable =
+            const temporary =
               status === 503 ||
-              message.includes("503") ||
-              message.includes(
-                "unavailable"
-              ) ||
-              message.includes(
-                "service unavailable"
-              );
+              msg.includes("503") ||
+              msg.includes("unavailable");
 
             if (
-              unavailable &&
+              temporary &&
               !fullCode &&
-              attempts < 3 &&
+              attempt < 3 &&
               !disconnected
             ) {
               await sleep(
-                attempts === 1
+                attempt === 1
                   ? 1500
                   : 3000
               );
@@ -973,61 +979,48 @@ Rules:
           return;
         }
 
-        if (
-          !completed ||
-          !fullCode.trim()
-        ) {
-          metricsData.upstreamGenerationErrors++;
+        const cleaned =
+          cleanCode(fullCode);
 
-          sendSSE(res, {
+        if (
+          !done ||
+          !cleaned
+        ) {
+          metrics.upstreamGenerationErrors++;
+
+          sseSend(res, {
             type: "error",
             error:
-              "Gemini returned an empty response. Please try again."
+              "No code was returned. Please try again."
           });
 
           return;
         }
 
-        if (
-          !cleanGeneratedCode(
-            fullCode
-          )
-        ) {
-          metricsData.upstreamGenerationErrors++;
+        metrics.successfulGenerations++;
 
-          sendSSE(res, {
-            type: "error",
-            error:
-              "Gemini returned an empty response. Please try again."
-          });
-
-          return;
-        }
-
-        metricsData.successfulGenerations++;
-
-        sendSSE(res, {
+        sseSend(res, {
           type: "done",
           language,
           filename
         });
       } catch (error) {
-        metricsData.upstreamGenerationErrors++;
+        metrics.upstreamGenerationErrors++;
 
         if (!disconnected) {
-          sendSSE(res, {
+          console.error(
+            "Code streaming error:",
+            error?.message || error
+          );
+
+          sseSend(res, {
             type: "error",
             error:
               "Unable to generate code right now. Please try again."
           });
-
-          console.error(
-            "Gemini Code Streaming Error:",
-            error?.message || error
-          );
         }
       } finally {
-        clearInterval(keepAlive);
+        clearInterval(ping);
 
         if (
           !res.writableEnded &&
@@ -1037,7 +1030,7 @@ Rules:
         }
       }
     } catch (error) {
-      return next(error);
+      next(error);
     }
   }
 );
@@ -1049,7 +1042,7 @@ Rules:
 app.use(
   (err, req, res, next) => {
     console.error(
-      "Server Error Exception:",
+      "Server Error:",
       err?.message || err
     );
 
@@ -1081,6 +1074,6 @@ const server = app.listen(
   }
 );
 
-// Long-running streaming responses
+// No application-level response timeout.
 server.keepAliveTimeout = 120000;
 server.headersTimeout = 125000;
