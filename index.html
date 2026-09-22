@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get Your Code Now — AI Code Generator PWA (Step 3C Production)</title>
+    <title>Get Your Code Now — AI Coding & Learning Assistant PWA</title>
     
     <!-- PWA Manifest Link -->
     <link rel="manifest" href="./manifest.json" crossorigin="use-credentials">
@@ -121,6 +121,7 @@
             <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
                 <a href="#hero" class="hover:text-blue-400 transition-colors">Home</a>
                 <a href="#generator" class="hover:text-blue-400 transition-colors">Generator</a>
+                <a href="#ask-ai" class="hover:text-purple-400 transition-colors">Ask AI</a>
                 <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
                 <a href="#languages" class="hover:text-blue-400 transition-colors">Languages</a>
                 <a href="#pwa-section" class="hover:text-blue-400 transition-colors">PWA App</a>
@@ -143,6 +144,7 @@
         <div id="mobile-menu" class="hidden md:hidden glass-panel border-b border-border px-4 pt-2 pb-6 space-y-3">
             <a href="#hero" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Home</a>
             <a href="#generator" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Generator</a>
+            <a href="#ask-ai" class="block py-2 text-gray-300 hover:text-purple-400 font-medium">Ask AI</a>
             <a href="#features" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Features</a>
             <a href="#languages" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">Languages</a>
             <a href="#pwa-section" class="block py-2 text-gray-300 hover:text-blue-400 font-medium">PWA App</a>
@@ -168,7 +170,7 @@
                 <div class="lg:col-span-7 space-y-8">
                     <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold tracking-wide uppercase">
                         <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                        AI CODE GENERATOR • GEMINI INTEGRATED
+                        AI CODING + LEARNING ASSISTANT • GEMINI INTEGRATED
                     </div>
 
                     <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1]">
@@ -180,7 +182,7 @@
                     </p>
 
                     <p class="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
-                        Describe what you want to build and turn your idea into clean, usable code using Google Gemini AI.
+                        Generate code, ask coding questions, explain errors, and learn faster with Google Gemini AI.
                     </p>
 
                     <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
@@ -326,100 +328,98 @@
         </div>
     </section>
 <!-- Ask AI Assistant Section -->
-<div class="mt-10 glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
+    <section id="ask-ai" class="py-16 relative bg-darker/50 border-t border-border/50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-border glow-border shadow-2xl space-y-6">
 
-    <div class="text-center space-y-2">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-wide">
-            <i class="fa-solid fa-robot"></i> AI Assistant
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-wide">
+                        <i class="fa-solid fa-robot"></i> AI Assistant
+                    </div>
+
+                    <h2 class="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                        Ask AI Assistant
+                    </h2>
+
+                    <p class="text-gray-400 text-sm sm:text-base max-w-xl mx-auto">
+                        Ask coding questions, explain errors, learn concepts, prepare for interviews, or understand code.
+                    </p>
+                </div>
+
+                <div class="space-y-3">
+                    <label for="chat-prompt-input" class="block text-sm font-semibold text-gray-300">
+                        What do you want to ask?
+                    </label>
+
+                    <textarea
+                        id="chat-prompt-input"
+                        rows="5"
+                        maxlength="2000"
+                        class="w-full bg-darker/80 border border-border rounded-2xl p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 font-sans text-sm transition-all resize-none"
+                        placeholder="Example: Explain JavaScript promises in simple words..."
+                    ></textarea>
+                    <div class="text-right text-xs text-gray-500">Maximum 2000 characters</div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button
+                        id="ask-ai-btn"
+                        type="button"
+                        class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 transition-all"
+                    >
+                        <i class="fa-solid fa-paper-plane"></i>
+                        Ask AI
+                    </button>
+
+                    <button
+                        id="clear-chat-btn"
+                        type="button"
+                        class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-border text-gray-300 font-semibold text-sm transition-all"
+                    >
+                        <i class="fa-solid fa-eraser"></i>
+                        Clear
+                    </button>
+                </div>
+
+                <div id="chat-loading-state" class="hidden py-8 text-center space-y-3" aria-live="polite">
+                    <div class="inline-block w-9 h-9 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="text-sm font-medium text-gray-300 animate-pulse">
+                        Thinking with Gemini AI...
+                    </div>
+                </div>
+
+                <div id="chat-error-alert" class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                    <span id="chat-error-message">
+                        Unable to get an AI response right now.
+                    </span>
+                </div>
+
+                <div id="chat-result-container" class="hidden space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-sm font-semibold text-gray-300">AI Answer</span>
+
+                        <button
+                            id="copy-answer-btn"
+                            type="button"
+                            class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5"
+                        >
+                            <i class="fa-regular fa-copy"></i>
+                            Copy Answer
+                        </button>
+                    </div>
+
+                    <div class="p-5 rounded-2xl bg-darker/70 border border-border overflow-x-auto">
+                        <div
+                            id="chat-answer-text"
+                            class="text-sm sm:text-base text-gray-200 leading-relaxed whitespace-pre-wrap"
+                        ></div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-
-        <h3 class="text-2xl sm:text-3xl font-bold text-white">
-            Ask AI Assistant
-        </h3>
-
-        <p class="text-gray-400 text-sm max-w-xl mx-auto">
-            Ask coding questions, explain errors, learn concepts, prepare for interviews, or understand code.
-        </p>
-    </div>
-
-    <div class="space-y-3">
-        <label for="chat-prompt-input" class="block text-sm font-semibold text-gray-300">
-            What do you want to ask?
-        </label>
-
-        <textarea
-            id="chat-prompt-input"
-            rows="5"
-            class="w-full bg-darker/80 border border-border rounded-2xl p-4 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 font-sans text-sm transition-all resize-none"
-            placeholder="Example: Explain JavaScript promises in simple words..."
-        ></textarea>
-    </div>
-
-    <div class="flex flex-col sm:flex-row gap-3">
-        <button
-            id="ask-ai-btn"
-            class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2 transition-all"
-        >
-            <i class="fa-solid fa-paper-plane"></i>
-            Ask AI
-        </button>
-
-        <button
-            id="clear-chat-btn"
-            class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-border text-gray-300 font-semibold text-sm transition-all"
-        >
-            <i class="fa-solid fa-eraser"></i>
-            Clear
-        </button>
-    </div>
-
-    <div
-        id="chat-loading-state"
-        class="hidden py-8 text-center space-y-3"
-    >
-        <div class="inline-block w-9 h-9 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-        <div class="text-sm font-medium text-gray-300 animate-pulse">
-            Thinking with Gemini AI...
-        </div>
-    </div>
-
-    <div
-        id="chat-error-alert"
-        class="hidden p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3"
-    >
-        <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-        <span id="chat-error-message">
-            Unable to get an AI response right now.
-        </span>
-    </div>
-
-    <div
-        id="chat-result-container"
-        class="hidden space-y-3"
-    >
-        <div class="flex items-center justify-between gap-3">
-            <span class="text-sm font-semibold text-gray-300">
-                AI Answer
-            </span>
-
-            <button
-                id="copy-answer-btn"
-                class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 text-xs transition-colors flex items-center gap-1.5"
-            >
-                <i class="fa-regular fa-copy"></i>
-                Copy Answer
-            </button>
-        </div>
-
-        <div class="p-5 rounded-2xl bg-darker/70 border border-border overflow-x-auto">
-            <div
-                id="chat-answer-text"
-                class="text-sm sm:text-base text-gray-200 leading-relaxed whitespace-pre-wrap"
-            ></div>
-        </div>
-    </div>
-
-</div>
+    </section>
     <!-- Developer Experience Section -->
     <section class="py-24 relative border-t border-border/50 bg-dark">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -701,19 +701,20 @@ function verifyToken(req, res, next) {
                     </div>
                     Get Your Code Now
                 </div>
-                <p class="text-xs text-gray-400">“Build faster with AI-powered coding.” Built as a Progressive Web App.</p>
+                <p class="text-xs text-gray-400">“Generate code. Ask AI. Learn faster.” Built as a Progressive Web App.</p>
             </div>
 
             <div class="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
                 <a href="#hero" class="hover:text-blue-400 transition-colors">Home</a>
                 <a href="#generator" class="hover:text-blue-400 transition-colors">Generator</a>
+                <a href="#ask-ai" class="hover:text-purple-400 transition-colors">Ask AI</a>
                 <a href="#features" class="hover:text-blue-400 transition-colors">Features</a>
                 <a href="#" class="hover:text-blue-400 transition-colors">Privacy</a>
                 <a href="#" class="hover:text-blue-400 transition-colors">Terms</a>
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-border/50 text-center text-xs text-gray-500 font-mono">
-            Step 3C — Production Render Backend Integration Complete (WebGL Fault-Tolerant).
+            AI Coding + Learning Assistant — Production Render Backend Integration.
         </div>
     </footer>
 
@@ -1044,13 +1045,24 @@ async function handleAskAI() {
         return;
     }
 
+    if (prompt.length > 2000) {
+        chatErrorMessage.textContent = "Your question is too long. Maximum length is 2000 characters.";
+        chatErrorAlert.classList.remove('hidden');
+        return;
+    }
+
     isAskingAI = true;
     askAiBtn.disabled = true;
+    clearChatBtn.disabled = true;
     askAiBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    clearChatBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
     chatLoadingState.classList.remove('hidden');
     chatResultContainer.classList.add('hidden');
     chatErrorAlert.classList.add('hidden');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 50000);
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -1058,10 +1070,17 @@ async function handleAskAI() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ prompt }),
+            signal: controller.signal
         });
 
-        const data = await response.json();
+        let data = null;
+
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            throw new Error("The server returned an invalid response. Please try again.");
+        }
 
         if (!response.ok || !data.success) {
             throw new Error(
@@ -1069,7 +1088,7 @@ async function handleAskAI() {
             );
         }
 
-        chatAnswerText.textContent = data.answer;
+        chatAnswerText.textContent = data.answer || "No answer was returned.";
 
         chatLoadingState.classList.add('hidden');
         chatResultContainer.classList.remove('hidden');
@@ -1083,15 +1102,22 @@ async function handleAskAI() {
         console.error("Ask AI error:", err);
 
         chatLoadingState.classList.add('hidden');
-        chatErrorMessage.textContent =
-            err.message || "Unable to get an AI response right now. Please try again.";
+
+        if (err.name === "AbortError") {
+            chatErrorMessage.textContent = "The AI is taking too long to respond. Please try again.";
+        } else {
+            chatErrorMessage.textContent =
+                err.message || "Unable to get an AI response right now. Please try again.";
+        }
 
         chatErrorAlert.classList.remove('hidden');
-
     } finally {
+        clearTimeout(timeoutId);
         isAskingAI = false;
         askAiBtn.disabled = false;
+        clearChatBtn.disabled = false;
         askAiBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        clearChatBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 }
 
@@ -1132,6 +1158,15 @@ if (copyAnswerBtn) {
         }
     });
 }
+        if (chatPromptInput) {
+            chatPromptInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                    event.preventDefault();
+                    handleAskAI();
+                }
+            });
+        }
+
         // Action buttons inside code result card
         const copyBtn = document.getElementById('copy-btn');
         if(copyBtn) {
